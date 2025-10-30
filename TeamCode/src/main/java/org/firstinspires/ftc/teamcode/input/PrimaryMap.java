@@ -22,4 +22,27 @@ public class PrimaryMap extends InputMap{
     public double rotateX() {
         return gamepad.left_stick_x;
     }
+
+    public int getBallIndex() {
+        int selectCount = 0;
+        int currSelection = -1;
+
+        if(gamepad.dpad_up) {
+            currSelection = 0;
+            selectCount++;
+        }
+        if(gamepad.dpad_left) {
+            currSelection = 1;
+            selectCount++;
+        }
+        if(gamepad.dpad_right){
+            currSelection = 2;
+            selectCount++;
+        }
+
+        if(selectCount != 1) return -1; //very intentional
+        // if there are multiple simultaneous presses we dont want
+        // ambiguity so we dont do jack until the user finally decides
+        // what to press
+    }
 }
