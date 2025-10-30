@@ -22,7 +22,6 @@ public class MainTeleop extends OpMode{
     Drivetrain drivetrain;
     Shooter shooter;
     Magazine magazine;
-    Intake intake;
     PrimaryMap inputMap;
 
     @Override
