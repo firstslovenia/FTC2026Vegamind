@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.input.InputMap;
 
 public abstract class Drivetrain extends SampleMecanumDrive {
     protected IMU imu;
@@ -19,5 +20,5 @@ public abstract class Drivetrain extends SampleMecanumDrive {
         this.motors = motors;
     }
 
-    public abstract void run(Gamepad gamepad);
+    public abstract void run(InputMap inputMap);
 }

@@ -1,19 +1,19 @@
 package org.firstinspires.ftc.teamcode.drivetrain;
 
-import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
+
+import org.firstinspires.ftc.teamcode.input.InputMap;
 
 public class RobotCentricDrivetrain extends Drivetrain {
     public RobotCentricDrivetrain( HardwareMap hardwareMap, IMU imu, Motors motors) {
         super(hardwareMap, imu, motors);
     }
 
-    @Override
-    public void run(Gamepad gamepad) {
-        double y = gamepad.left_stick_y;
-        double x = gamepad.left_stick_x * 1.1;
-        double rx = gamepad.right_stick_x;
+    public void run(InputMap inputMap) {
+        double y = inputMap.driveY();
+        double x = inputMap.driveX() * 1.1;
+        double rx = inputMap.rotateX();
 
     /* if (x == 0 && y == 0 && rx == 0) {
             y = secondaryInputMap.getDriveY();

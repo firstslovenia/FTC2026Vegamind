@@ -5,6 +5,8 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 
+import org.firstinspires.ftc.teamcode.input.InputMap;
+
 public class TankDrive extends Drivetrain {
 
     public TankDrive(HardwareMap hardwareMap, Motors motors) {
@@ -16,11 +18,11 @@ public class TankDrive extends Drivetrain {
     }
 
     @Override
-    public void run(Gamepad gamepad) {
-        motors.rearRight.setPower(gamepad.left_stick_y);
-        motors.frontRight.setPower(gamepad.left_stick_y);
+    public void run(InputMap inputMap) {
+        motors.rearRight.setPower(inputMap.driveY());
+        motors.frontRight.setPower(inputMap.driveY());
 
-        motors.rearLeft.setPower(-gamepad.right_stick_y);
-        motors.frontLeft.setPower(-gamepad.right_stick_y);
+        motors.rearLeft.setPower(inputMap.driveX());
+        motors.frontLeft.setPower(inputMap.driveX());
     }
 }
