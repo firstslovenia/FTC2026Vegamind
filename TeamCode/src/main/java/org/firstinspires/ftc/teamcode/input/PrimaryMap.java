@@ -4,6 +4,9 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 public class PrimaryMap extends InputMap{
 
+    boolean previousShooterInput = false;
+    boolean currentShooterState = false;
+
     public PrimaryMap(Gamepad gamepad) {
        super(gamepad);
     }
@@ -46,5 +49,19 @@ public class PrimaryMap extends InputMap{
         // what to press
 
         return selectCount;
+    }
+
+    public boolean runShooter() {
+        if(gamepad.cross == previousShooterInput) return currentShooterState;
+
+        previousShooterInput = !previousShooterInput;
+
+        if(previousShooterInput) currentShooterState = !currentShooterState;
+
+        return currentShooterState;
+    }
+
+    public boolean openGate() {
+        return gamepad.circle;
     }
 }
