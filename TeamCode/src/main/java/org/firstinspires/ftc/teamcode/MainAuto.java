@@ -29,7 +29,7 @@ public class MainAuto extends OpMode{
     //EVERYTHING MUST BE, IS, AND WILL BE NONBLOCKING OR I WILL STRANGLE SOMEONE
     @Override
     public void init() {
-
+        while(!magazine.init());
     }
 
     @Override
