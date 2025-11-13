@@ -3,23 +3,29 @@ package org.firstinspires.ftc.teamcode.shooter;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 public class Shooter {
-    private DcMotor motor;
-    public Shooter(DcMotor motor) {
-       this.motor = motor;
+    private DcMotor motor1;
+    private DcMotor motor2;
 
-       motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+    public Shooter(DcMotor motor1, DcMotor motor2) {
+       this.motor1 = motor1;
+       this.motor2 = motor2;
+
+       motor1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        motor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
     }
 
     public void windup() {
-        motor.setPower(1.0f);
+        motor1.setPower(1.0f);
+        motor2.setPower(1.0f);
     }
 
     public boolean isWound() {
-        return motor.getPower() != 0.0;
+        return motor1.getPower() != 0.0;
     }
 
     public void winddown() {
-        motor.setPower(0.0f);
+        motor1.setPower(0.0f);
+        motor2.setPower(0.0f);
     }
 }
 
