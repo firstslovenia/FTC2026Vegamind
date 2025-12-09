@@ -24,8 +24,8 @@ public class FieldCentricDrivetrain extends Drivetrain {
         //  TODO imu reset on button press
 
         Pose2d move = new Pose2d(
-                x,
-                y,
+                -y,
+                -x,
                 rot
         );
 

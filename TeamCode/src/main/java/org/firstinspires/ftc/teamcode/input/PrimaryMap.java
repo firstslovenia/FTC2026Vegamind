@@ -30,11 +30,11 @@ public class PrimaryMap extends InputMap{
         int selectCount = 0;
         int currSelection = -1;
 
-        if(gamepad.dpad_up) {
+        if(gamepad.dpad_left) {
             currSelection = 0;
             selectCount++;
         }
-        if(gamepad.dpad_left) {
+        if(gamepad.dpad_up) {
             currSelection = 1;
             selectCount++;
         }
@@ -48,7 +48,7 @@ public class PrimaryMap extends InputMap{
         // ambiguity so we dont do jack until the user finally decides
         // what to press
 
-        return selectCount;
+        return currSelection;
     }
 
     public boolean runShooter() {
@@ -61,7 +61,11 @@ public class PrimaryMap extends InputMap{
         return currentShooterState;
     }
 
-    public boolean openGate() {
+    public boolean turnTowardsBasket() {
         return gamepad.circle;
+    }
+
+    public boolean openGate() {
+        return gamepad.triangle;
     }
 }
