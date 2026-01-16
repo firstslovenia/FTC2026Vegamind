@@ -6,6 +6,8 @@ public class PrimaryMap extends InputMap{
 
     boolean previousShooterInput = false;
     boolean currentShooterState = false;
+    boolean previousIntakeInput = false;
+    boolean currentIntakeState = false;
 
     public PrimaryMap(Gamepad gamepad) {
        super(gamepad);
@@ -59,6 +61,13 @@ public class PrimaryMap extends InputMap{
         if(previousShooterInput) currentShooterState = !currentShooterState;
 
         return currentShooterState;
+    }
+
+    public boolean toggleShooter() {
+        if (gamepad.circle == previousIntakeInput) return currentIntakeState;
+        previousIntakeInput = !previousIntakeInput;
+        if (previousIntakeInput) currentIntakeState = !currentIntakeState;
+        return currentIntakeState;
     }
 
     public boolean turnTowardsBasket() {

@@ -21,6 +21,7 @@ import org.firstinspires.ftc.teamcode.drivetrain.FieldCentricDrivetrain;
 import org.firstinspires.ftc.teamcode.drivetrain.Motors;
 import org.firstinspires.ftc.teamcode.drivetrain.TankDrive;
 import org.firstinspires.ftc.teamcode.input.PrimaryMap;
+import org.firstinspires.ftc.teamcode.intake.Intake;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
 import org.firstinspires.ftc.teamcode.shooter.Shooter;
 
@@ -28,6 +29,7 @@ public class MainTeleop extends OpMode{
 
     Shooter shooter;
     Magazine magazine;
+    Intake intake;
     PrimaryMap inputMap;
 
     Follower follower;
@@ -46,6 +48,7 @@ public class MainTeleop extends OpMode{
         shooter = new Shooter(hardwareMap.get(DcMotor.class, "shooter1"), hardwareMap.get(DcMotor.class, "shooter2"));
         magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "gateServo"), hardwareMap.get(AnalogInput.class, "potentiometer"),
                 colorSensors);
+        intake = new Intake(hardwareMap.get(DcMotor.class, "intake"));
         follower = Constants.createFollower(hardwareMap);
         follower.useCentripetal = true;
         follower.setStartingPose(new Pose());
@@ -61,6 +64,8 @@ public class MainTeleop extends OpMode{
 
         if(inputMap.openGate()) magazine.openGate();
         else magazine.closeGate();
+
+        if (inputMap.toggleShooter()) intake.fuckywuckypowerupy();
 
         telemetry.addData("heading", follower.getHeading());
         magazine.update(telemetry);
