@@ -1,44 +1,73 @@
 package org.firstinspires.ftc.teamcode.magazine;
 
-import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.color.BallColor;
-import org.firstinspires.ftc.teamcode.color.HSV;
 
 public class Magazine {
     DcMotor magazineMotor;
-    AnalogInput potentiometer;
 
-    Servo gateServo;
+    Servo helpServo;
+    ElapsedTime servoCycleTimer;
+    double servoCycleTime = 1.5f; //adjust, just to be safe for now
 
-    int currIndex = -1;
+    TouchSensor intakeSensor;
+    TouchSensor outtakeSensor;
 
-    int gateClosePos = 1;
-    int gateOpenPos = 0;
+    ColorSensor colorSensor;
+    DistanceSensor distanceSensor;
 
-    final int[] magazineBallPositions = {-145, 0, 155}; //TODO replace
-    ColorSensor[] sensors;
+    int currIndex = 0;
+    int outtakePosOffset = -30;
 
-    final double middlePotentiometerVoltage = 1.423;
+    boolean isOuttakeTarget = false;
 
-    int targetPos = 0;
 
-    ElapsedTime magOpenTimer;
-    int magOpenTime = 1500;
+    double slotPeriod = 260; // set
+    double margin = 50; // set
+    double adjustPower = 0.2; //set
+    int dir = 0;
 
-    public Magazine(DcMotor magazineMotor, Servo gateServo, AnalogInput potentiometer, ColorSensor[] sensors) {
+    public enum State {
+        IDLE,
+        BROAD_ROTATE,
+        ADJUST_ROTATE,
+        DEPOSIT,
+    };
+
+    public enum Color {
+        NONE,
+        PURPLE,
+        GREEN
+    }
+
+    Color[] slotColors = {Color.NONE, Color.NONE, Color.NONE};
+
+    State state = State.IDLE;
+
+    public Magazine(DcMotor magazineMotor, Servo helpServo, TouchSensor intakeSensor, TouchSensor outtakeSensor,
+                    ColorSensor colorSensor, DistanceSensor distanceSensor) {
         this.magazineMotor = magazineMotor;
-        this.gateServo = gateServo;
-        this.sensors = sensors;
-        this.potentiometer = potentiometer;
+        this.helpServo = helpServo;
+        this.intakeSensor = intakeSensor;
+        this.outtakeSensor = outtakeSensor;
+        this.colorSensor = colorSensor;
+        this.distanceSensor = distanceSensor;
 
         magazineMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         magazineMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        slotColors = new Color[]{Color.NONE, Color.NONE, Color.NONE};
+
+        servoCycleTimer = new ElapsedTime();
     }
 
     double round(double x, int decimals) {
@@ -51,32 +80,13 @@ public class Magazine {
         return Math.abs(a-b) <= tolerance;
     }
 
-    boolean goToPosPotentiometer(double v, double p) {
-        if(approxEq(potentiometer.getVoltage(), v, 0.02)) {
-            //once we get to a known position we just reset so the motor knows where it is relative to the magazine,
-            //we dont use the potentiometer everywhere because the fucking voltage curve isn't linear
-            //(I <3 REV)
-            magazineMotor.setPower(0.0);
-
-            return true;
-        }
-
-        if(magazineMotor.getMode() != DcMotor.RunMode.RUN_USING_ENCODER)
-            magazineMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-        double dir = (potentiometer.getVoltage() > v) ? -1 : 1;
-        magazineMotor.setPower(dir * p);
-
-        return false;
-    }
-
     boolean goToPosEncoder(int p) {
         if (approxEq(magazineMotor.getCurrentPosition(), p, 2)) {
             magazineMotor.setPower(0.0f);
             return true;
         }
 
-        magazineMotor.setTargetPosition(p);
+        magazineMotor.setTargetPosition(p);// good enough?
         if(magazineMotor.getMode() != DcMotor.RunMode.RUN_TO_POSITION)
             magazineMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
@@ -85,60 +95,133 @@ public class Magazine {
         return false;
     }
 
-    public void rotateToBall(int index) {
-        if(index > 2 || index < 0) return;
+    boolean rotateToBall(int index) {
+        if(state != State.IDLE) return false;
 
-        targetPos = magazineBallPositions[index];
-        currIndex = -1;
+        if(helpServo.getPosition() == 1) {
+            magazineMotor.setPower(0.0f);
+            throw new RuntimeException(); // THIS SHOULD BE HANDLED OUTSIDE
+            //important failsafe
+        }
+
+        if(index >= 6 || index < 0) throw new ArrayIndexOutOfBoundsException();
+
+        isOuttakeTarget = index >= 3;
+        index %= 3;
+
+        if(currIndex == index) return true;
+
+        dir = (Math.abs(currIndex - index) == 1 ? 1 : -1) * (currIndex - index < 0 ? -1 : 1);
+        //double targetPos = magazineMotor.getCurrentPosition() + dir * (slotPeriod - margin); // if this shit works first try i'll start believing in god
+        double targetPos = (index - 1) * slotPeriod;
+        dir = targetPos > 0 ? 1 : -1;
+        if(isOuttakeTarget)
+            targetPos += outtakePosOffset;
+
+        currIndex = index;
+
+        magazineMotor.setTargetPosition((int)targetPos);
+        magazineMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        magazineMotor.setPower(adjustPower);
+
+        state = State.BROAD_ROTATE;
+
+        return true;
     }
 
     public void update(Telemetry telemetry) {
-        telemetry.addData("target po: ", targetPos);
-        telemetry.addData("potentionmeter: ", potentiometer.getVoltage());
-        goToPosEncoder(targetPos);
-    }
-
-    /// returns true if magazine is at the correct position
-    /// in which case the gate will open, otherwise it wont
-    public boolean openGate() {
-//        if (!atTargetBall()) {
-  //          return false;
-    //    }
-
-        gateServo.setPosition(gateOpenPos);
-
-        if(magOpenTimer == null) {
-            magOpenTimer = new ElapsedTime();
+        if(telemetry != null) {
+            telemetry.addData("curr mag pos:", magazineMotor.getCurrentPosition());
+            telemetry.addData("target mag pos:", magazineMotor.getTargetPosition());
+            telemetry.addData("target outtake:", isOuttakeTarget);
+            telemetry.addData("curr state", state);
+            telemetry.addData("currIndex", currIndex);
+            telemetry.addData("mag slot 1:", slotColors[0]);
+            telemetry.addData("mag slot 2:", slotColors[1]);
+            telemetry.addData("mag slot 3:", slotColors[2]);
         }
 
-        return magOpenTimer.milliseconds() > magOpenTime;
+        switch(state) {
+            case IDLE:
+                break;
+            case BROAD_ROTATE:
+                if(!approxEq(magazineMotor.getCurrentPosition(), magazineMotor.getTargetPosition(), 10))
+                    break;
+                state = State.ADJUST_ROTATE;
+                break;
+            case ADJUST_ROTATE:
+                TouchSensor sensor = isOuttakeTarget ? outtakeSensor : intakeSensor;
+
+                magazineMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                magazineMotor.setPower(adjustPower * dir);
+
+                if(!sensor.isPressed()) break;
+
+                magazineMotor.setPower(0.0f);
+
+                state = State.IDLE;
+                break;
+            case DEPOSIT:
+                if(servoCycleTimer.milliseconds() < servoCycleTime) break;
+
+                if(helpServo.getPosition() == 1) {
+                    helpServo.setPosition(0);
+                    servoCycleTimer.reset();
+                    break;
+                } else {
+                    state = State.IDLE;
+                }
+        }
+        updateColorData();
     }
 
-    public void closeGate() {
-        gateServo.setPosition(gateClosePos);
-        magOpenTimer = null;
+    void updateColorData() {
+        if(isOuttakeTarget || distanceSensor.getDistance(DistanceUnit.MM) > 30) return; // clearly just black
+
+        if(colorSensor.green() > colorSensor.blue()) // stupid but works "well enough' i think probably
+            slotColors[currIndex] = Color.GREEN;
+        else
+            slotColors[currIndex] = Color.PURPLE;
     }
 
+    int findSlotWithColor(Color color) {
+        for(int i = 0; i < slotColors.length; i++) {
+            if(slotColors[i] == color) return i;
+        }
 
-    public boolean atTargetBall() {
-        if(currIndex == -1) return false;
-
-        return gateServo.getPosition() == magazineBallPositions[currIndex]; // TODO add a margin for error?
+        return -1;
     }
 
-    public BallColor getBallAtSlot(int index) {
-        /*int r = sensors[index].red();
-        int g = sensors[index].green();
-        int b = sensors[index].blue();
+    public boolean setIntake() {
+        int index = findSlotWithColor(Color.NONE);
 
-        HSV color = new HSV(r, g, b);
+        if(index == -1) return false;
 
-        if(color.v() < 0.3) return BallColor.NONE;
+        return rotateToBall(index);
+    }
 
-        if (color.h() < 180) return BallColor.GREEN; //good enough-ish
-        else return BallColor.PURPLE;*/
+    public boolean setOuttake(Color color) {
+        int index = findSlotWithColor(color);
 
-        if(index == 0) return BallColor.GREEN;
-        else return BallColor.PURPLE;
+        if(index == -1) return false;
+
+        return rotateToBall(index + 3);
+    }
+
+    public void depositBall() {
+        if(state != State.IDLE) throw new RuntimeException();
+
+        slotColors[currIndex] = Color.NONE;
+        state = State.DEPOSIT;
+        helpServo.setPosition(1.0);
+        servoCycleTimer.reset();
+    }
+
+    public State getState() {
+        return state;
+    }
+
+    public Color getBallAtSlot(int index) {
+        return slotColors[index];
     }
 }

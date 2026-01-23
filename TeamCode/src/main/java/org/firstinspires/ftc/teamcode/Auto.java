@@ -1,22 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.pedropathing.follower.Follower;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.AnalogInput;
-import com.qualcomm.robotcore.hardware.ColorSensor;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.util.ElapsedTime;
-
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.teamcode.auto.Constants;
-import org.firstinspires.ftc.teamcode.magazine.Magazine;
-import org.firstinspires.ftc.teamcode.manager.ShooterManager;
-import org.firstinspires.ftc.teamcode.paths.PathState;
-import org.firstinspires.ftc.teamcode.paths.Paths;
-import org.firstinspires.ftc.teamcode.shooter.Shooter;
-import org.firstinspires.ftc.teamcode.vision.AprilTagDetector;
-
+/*
 abstract class Auto extends OpMode{
     Magazine magazine;
     Shooter shooter;
@@ -45,8 +29,7 @@ abstract class Auto extends OpMode{
                 hardwareMap.get(ColorSensor.class, "color3")};
 
         shooter = new Shooter(hardwareMap.get(DcMotor.class, "shooter1"), hardwareMap.get(DcMotor.class, "shooter2"));
-        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "gateServo"), hardwareMap.get(AnalogInput.class, "potentiometer"),
-                colorSensors);
+//        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "gateServo"));
         detector = new AprilTagDetector(
                 hardwareMap.get(WebcamName.class, "webcam")
         );
@@ -109,7 +92,7 @@ abstract class Auto extends OpMode{
                 refillTimer = null;
 
                 break;
-*/
+
             case SHOOT_PATH:
                 pathState = PathState.SHOOT;
                 break;
@@ -119,3 +102,4 @@ abstract class Auto extends OpMode{
     }
 }
 
+*/
