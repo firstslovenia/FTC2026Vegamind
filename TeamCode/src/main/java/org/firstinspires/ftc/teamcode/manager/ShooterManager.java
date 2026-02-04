@@ -3,9 +3,8 @@ package org.firstinspires.ftc.teamcode.manager;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.color.BallColor;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
-import org.firstinspires.ftc.teamcode.shooter.Shooter;
+import org.firstinspires.ftc.teamcode.shooter.BallIO;
 
 public class ShooterManager {
 
@@ -20,7 +19,7 @@ public class ShooterManager {
     int currSlot = 0;
 
     Magazine magazine;
-    Shooter shooter;
+    BallIO shooter;
 
     boolean isWindingUp = false;
     int shotsLeft = 0;
@@ -34,27 +33,12 @@ public class ShooterManager {
     final int shootTime = 1500;
     final int windupTime = 3000; // idk smthn
 
-    public ShooterManager(Magazine magazine, Shooter shooter, int tagID) {
+    public ShooterManager(Magazine magazine, BallIO shooter, int tagID) {
         gPos = tagID - 21;
         //https://ftc-resources.firstinspires.org/ftc/game/manual-10 - page 8
 
         this.magazine = magazine;
         this.shooter = shooter;
-    }
-
-    int getNextMagSlot() {
-        /*BallColor targetColor = BallColor.PURPLE;
-        if(currSlot % 3 == gPos)
-            targetColor = BallColor.GREEN;
-
-        for(int i = 0; i < 3; i++) {
-            if(targetColor == magazine.getBallAtSlot(i))
-                return i;
-        }*/
-
-        //return -1; //TODO how to handle no ball
-
-        return currSlot;
     }
 
     public int getWindupTime() {
@@ -85,34 +69,37 @@ public class ShooterManager {
     }
 
     void ballSelectState() {
-        currState = State.WINDUP;
+        if(magazine.getState() == Magazine.State.DEPOSIT) return; // wait
 
-        int index = getNextMagSlot();
-        if(index == -1) {
-            currState = State.WINDDOWN; // womp womp no ball found
+        Magazine.Color color = currSlot % 3 == gPos ? Magazine.Color.GREEN : Magazine.Color.PURPLE;
+        if(magazine.setOuttake(color)) {
+            currState = State.WINDUP;
+            return; //great we can continue the pattern
         }
 
-        magazine.rotateToBall(
-               index
-        );
+        boolean ret;
+        if(color == Magazine.Color.GREEN)
+            ret = magazine.setOuttake(Magazine.Color.PURPLE);
+        else
+            ret = magazine.setOuttake(Magazine.Color.GREEN);
+
+        //if(!ret) stop(); // no more balls :(
     }
 
     void windupState() {
         if (shotsLeft > 0) currState = State.SHOOT;
         shooter.windup();
         windupTimer.startTime();
-
     }
 
     void shootState() {
-        if (!magazine.openGate()
-        || windupTimer.milliseconds() < windupTime) return;
+        if(magazine.getState() != Magazine.State.IDLE) return;
+        magazine.depositBall();
 
-        currSlot = (currSlot + 1) % 3;
+        currSlot = ++currSlot % 3;
         shotsLeft--;
         if(shotsLeft > 0) {
             currState = State.BALL_SELECT;
-            magazine.closeGate();
             return;
         }
 
@@ -123,13 +110,18 @@ public class ShooterManager {
     void windDownState() {
         if(shotTimer.milliseconds() < shootTime) return;
 
-        magazine.closeGate(); // TODO conditional gate closing when there are multiple shots so if it switches from ball 0 to 2, the middle one doesn't fall out
         shooter.winddown();
 
         currState = State.INACTIVE;
     }
 
     public void update(Telemetry telemetry) {
+        if(telemetry != null) {
+            telemetry.addData("shootmanager ballindex: ", currSlot);
+            telemetry.addData("shootmanager shots: ", shotsLeft);
+            telemetry.addData("shootmanager state: ", currState);
+        }
+
         switch(currState) {
             case BALL_SELECT:
                 ballSelectState();
@@ -143,29 +135,14 @@ public class ShooterManager {
             case WINDDOWN:
                 windDownState();
                 break;
+            case INACTIVE:
+                break;
             default:
+                throw new IllegalStateException();
         }
-
-        telemetry.addData("ballindex: ", currSlot);
-        telemetry.addData("shots: ", shotsLeft);
-        telemetry.addData("state: ", currState);
     }
 
-    public void update() {
-        switch(currState) {
-            case BALL_SELECT:
-                ballSelectState();
-                break;
-            case WINDUP:
-                windupState();
-                break;
-            case SHOOT:
-                shootState();
-                break;
-            case WINDDOWN:
-                windDownState();
-                break;
-            default:
-        }
+    public void incCurrSlot() {
+        currSlot = (++currSlot) % 3;
     }
 }

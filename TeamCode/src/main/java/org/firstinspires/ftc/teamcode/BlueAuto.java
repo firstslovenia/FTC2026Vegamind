@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.firstinspires.ftc.teamcode.paths.PathsBlue;
 
+/*
 @Autonomous(name="WATER PABLO", group="FTC 26")
 public class BlueAuto extends Auto{
     @Override
@@ -11,3 +12,4 @@ public class BlueAuto extends Auto{
         paths = new PathsBlue(follower);
     }
 }
+*/

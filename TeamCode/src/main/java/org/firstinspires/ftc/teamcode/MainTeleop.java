@@ -1,79 +1,79 @@
 package org.firstinspires.ftc.teamcode;
 
-import static org.firstinspires.ftc.teamcode.auto.Tuning.follower;
+//exp  0 magazin
 
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.Path;
-import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.teamcode.auto.Constants;
-import org.firstinspires.ftc.teamcode.drivetrain.Drivetrain;
-import org.firstinspires.ftc.teamcode.drivetrain.FieldCentricDrivetrain;
-import org.firstinspires.ftc.teamcode.drivetrain.Motors;
-import org.firstinspires.ftc.teamcode.drivetrain.TankDrive;
+import org.firstinspires.ftc.teamcode.drive.Drive;
 import org.firstinspires.ftc.teamcode.input.PrimaryMap;
+import org.firstinspires.ftc.teamcode.input.SecondaryMap;
 import org.firstinspires.ftc.teamcode.intake.Intake;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
-import org.firstinspires.ftc.teamcode.shooter.Shooter;
+import org.firstinspires.ftc.teamcode.manager.ShooterManager;
+import org.firstinspires.ftc.teamcode.shooter.BallIO;
 
 public class MainTeleop extends OpMode{
 
-    Shooter shooter;
+    BallIO shooter;
+    BallIO intake;
     Magazine magazine;
-    Intake intake;
-    PrimaryMap inputMap;
 
+    PrimaryMap primaryMap;
+    SecondaryMap secondaryMap;
+    Drive drive;
     Follower follower;
+    ShooterManager shooterManager;
+
 
     double targetHeading = 0;
 
     double basketX, basketY;
+
+    Pose prevPose;
     @Override
     public void init() {
 
-        ColorSensor[] colorSensors = {hardwareMap.get(ColorSensor.class, "color1"),
-                                      hardwareMap.get(ColorSensor.class, "color2"),
-                                      hardwareMap.get(ColorSensor.class, "color3")};
-
-        inputMap = new PrimaryMap(gamepad1);
-        shooter = new Shooter(hardwareMap.get(DcMotor.class, "shooter1"), hardwareMap.get(DcMotor.class, "shooter2"));
-        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "gateServo"), hardwareMap.get(AnalogInput.class, "potentiometer"),
-                colorSensors);
-        intake = new Intake(hardwareMap.get(DcMotor.class, "intake"));
+        primaryMap = new PrimaryMap(gamepad1);
+        secondaryMap = new SecondaryMap(gamepad2);
+        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
+                hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"));
+        shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"));
+        intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"));
+        shooterManager = new ShooterManager(magazine, shooter, 23);
         follower = Constants.createFollower(hardwareMap);
-        follower.useCentripetal = true;
-        follower.setStartingPose(new Pose());
-        follower.update();
+        drive = new Drive(follower, new Pose());
     }
 
     @Override
     public void loop() {
-        magazine.rotateToBall(inputMap.getBallIndex());
 
-        if(inputMap.runShooter()) shooter.windup();
-        else shooter.winddown();
+        if(secondaryMap.startShooting())
+            shooterManager.start();
+        if(secondaryMap.stopShooting())
+            shooterManager.stop();
+        if(secondaryMap.incBall())
+            shooterManager.incCurrSlot();
+        if(secondaryMap.toggleIntake())
+            intake.windup();
+        else
+            intake.winddown();
 
-        if(inputMap.openGate()) magazine.openGate();
-        else magazine.closeGate();
+        if(secondaryMap.setupMag())
+            magazine.setIntake();
 
-        if (inputMap.toggleShooter()) intake.fuckywuckypowerupy();
 
-        telemetry.addData("heading", follower.getHeading());
+        shooterManager.update(telemetry);
         magazine.update(telemetry);
-        Path path = new Path(
-                        new BezierLine(follower.getPose(), new Pose(follower.getPose().getX() + gamepad1.left_stick_x, follower.getPose().getY() + gamepad1.left_stick_y,
-                                follower.getPose().getHeading() + gamepad1.right_stick_x)));
-        follower.followPath(path);
-        follower.update();
+
+        drive.drive(primaryMap.driveX(), primaryMap.driveY(), primaryMap.rotateX());
     }
 }
 
