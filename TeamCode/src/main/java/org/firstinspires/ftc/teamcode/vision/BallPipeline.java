@@ -12,6 +12,7 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
+import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvPipeline;
 
 import java.util.ArrayList;
@@ -23,6 +24,8 @@ public class BallPipeline extends OpenCvPipeline {
     Mat hsvFrame = new Mat();
     Mat filteredFrame = new Mat();
 
+    Mat hierarchy = new Mat(); // TOOD can this be null?
+
     List<MatOfPoint> contours = new ArrayList<>();
     boolean updatedContours = false;
 
@@ -30,43 +33,56 @@ public class BallPipeline extends OpenCvPipeline {
 
     int streamWidth, streamHeight;
 
-    public BallPipeline(WebcamName webcam, int streamWidth, int streamHeight) {
+    public BallPipeline(WebcamName webcam, int streamWidth, int streamHeight, int viewID) {
         this.streamWidth = streamWidth;
         this.streamHeight = streamHeight;
 
-        initCam(webcam);
+        initCam(webcam, viewID);
     }
 
 
-    void initCam(WebcamName webcam) {
+    void initCam(WebcamName webcam, int viewID) {
+        BallPipeline pipeline = this;
+
         cam = OpenCvCameraFactory.getInstance()
-                .createWebcam(webcam);
-        cam.openCameraDevice();
-        cam.startStreaming(streamWidth, streamHeight);
+                .createWebcam(webcam, viewID);
+
+        cam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
+            @Override
+            public void onOpened() {
+                cam.setPipeline(pipeline);
+                cam.startStreaming(streamWidth, streamHeight, OpenCvCameraRotation.SIDEWAYS_RIGHT);
+            }
+
+            @Override
+            public void onError(int errorCode) {
+
+            }
+        });
     }
 
     void smooth(Mat input) {
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(10, 10));
         Imgproc.morphologyEx(input, input, Imgproc.MORPH_OPEN, kernel);
         Imgproc.morphologyEx(input, input, Imgproc.MORPH_CLOSE, kernel);
     }
 
     void greenFilter(Mat input, Mat output) {
-        Scalar lowerB = new Scalar(0, 30, 30);
-        Scalar upperB = new Scalar(90, 255, 255);
+        Scalar lowerB = new Scalar(30, 30, 30);
+        Scalar upperB = new Scalar(100, 255, 255);
         Core.inRange(input, lowerB, upperB, output);
     }
 
     void purpleFilter(Mat input, Mat output) {
-        Scalar lowerB = new Scalar(90, 30, 30);
-        Scalar upperB = new Scalar(180, 255, 255);
+        Scalar lowerB = new Scalar(112.5, 30, 10);
+        Scalar upperB = new Scalar(150, 255, 255);
         Core.inRange(input, lowerB, upperB, output);
     }
 
     void filterContours(List<MatOfPoint> contours) {
         for(int i = 0; i < contours.size(); i++) {
             double area = Imgproc.contourArea(contours.get(i));
-            if(area > 200) { // no balls :(
+            if(area > 25000) { // no balls :(
                 continue;
             }
 
@@ -101,9 +117,10 @@ public class BallPipeline extends OpenCvPipeline {
 
     @Override
     public Mat processFrame(Mat input) {
+        contours.clear();
+        updatedContours = true;
 
         Imgproc.cvtColor(input, hsvFrame, Imgproc.COLOR_RGB2HSV);
-        updatedContours = true;
 
         if(currentColor == BallColor.GREEN) {
             currentColor = BallColor.PURPLE;
@@ -116,19 +133,23 @@ public class BallPipeline extends OpenCvPipeline {
 
         smooth(filteredFrame);
 
-        Mat hierarchy = new Mat(); // TOOD can this be null?
         Point offset = new Point(0, 0);
         Imgproc.findContours(filteredFrame, contours, hierarchy,
                 Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE, offset);
 
         filterContours(contours);
 
+        for(MatOfPoint contour : contours) {
+            Imgproc.rectangle(input, Imgproc.boundingRect(contour), new Scalar(255, 0, 0), -1);
+        }
+
+        //return input;
         return input;
     }
 }
 
-//opencvcamerafactory
-//.opencameradevice
-//.startstreaming
-//https://github.com/firstslovenia/ftc2025_auto/blob/master/TeamCode/src/main/java/opencv.java
+//opencvcamerafactory*/
+//.opencameradevice*/
+//.startstreaming*/
+//https://github.com/firstslovenia/ftc2025_auto/blob/master/TeamCode/src/main/java/opencv.java*/
 //For HSV, hue range is [0,179], saturation range is [0,255], and value range is [0,255]. Different software use different scales. So if you are comparing ...

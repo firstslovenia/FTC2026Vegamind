@@ -23,7 +23,7 @@ public class FieldManager {
         this.viewOffsetX = viewOffsetX;
         this.viewOffsetY = viewOffsetY;
 
-        pipeline = new BallPipeline(webcamName, streamWidth, streamHeight);
+        //pipeline = new BallPipeline(webcamName, streamWidth, streamHeight);
     }
 
     void update(int robotX, int robotY) {
