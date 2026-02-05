@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.vision;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.color.BallColor;
+import org.firstinspires.ftc.teamcode.manager.FieldBall;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -15,6 +16,7 @@ import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvPipeline;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,19 +93,21 @@ public class BallPipeline extends OpenCvPipeline {
         }
     }
 
-    List<BallContour> contour2Ball(List<MatOfPoint> contours) {
-        List<BallContour> balls = new ArrayList<>();
-        for(MatOfPoint contour : contours) {
-            Rect rect = Imgproc.boundingRect(contour);
-            balls.add(
-                    new BallContour(rect.x / (float)streamWidth, rect.y / (float)streamHeight, rect.width / (float)streamWidth / 2.0)
-            );
+    List<FieldBall> contour2Ball(List<MatOfPoint> contours) {
+        List<FieldBall> balls = new ArrayList<>();
+        synchronized (contours) {
+            for(MatOfPoint contour : contours) {
+                Rect rect = Imgproc.boundingRect(contour);
+                balls.add(
+                        new FieldBall(rect.x, rect.y, getLastUpdateColor())
+                );
+            }
         }
 
         return balls;
     }
 
-    public List<BallContour> getBallContours() {
+    public List<FieldBall> getBallContours() {
         if(!updatedContours) return null;
         updatedContours = false; // make sure we dont waste resources by going over the same contours twice
 
@@ -134,10 +138,13 @@ public class BallPipeline extends OpenCvPipeline {
         smooth(filteredFrame);
 
         Point offset = new Point(0, 0);
-        Imgproc.findContours(filteredFrame, contours, hierarchy,
-                Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE, offset);
+        synchronized(contours) {
+            Imgproc.findContours(filteredFrame, contours, hierarchy,
+                    Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE, offset);
 
-        filterContours(contours);
+            filterContours(contours);
+        }
+
 
         for(MatOfPoint contour : contours) {
             Imgproc.rectangle(input, Imgproc.boundingRect(contour), new Scalar(255, 0, 0), -1);
