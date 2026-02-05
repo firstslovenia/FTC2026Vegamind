@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.manager;
 
-import android.graphics.Rect;
 import android.util.Pair;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -14,6 +13,8 @@ import java.util.List;
 import lombok.var;
 
 public class FieldManager {
+    List<FieldBall> balls = new ArrayList<>();
+
     final int FIELD_SIZE = 366; //cm
 
     final int GRID_SIZE = 32;
@@ -99,7 +100,6 @@ public class FieldManager {
 
         //also x and y are flipped because the camera stream is flipped
         double relativeBallPosX = Math.cos(ball.y / streamHeight/*normalize*/ * 3.14159 / 2 /*so we get normalized output*/);//normalized ball position relative to triangle, this calc is to account for distortion near the dges
-        double height = sideLength * Math.cos(90 - horFov / 2); // using the side length we can make 2 right triangles at the
         //also it is of note cos is used here because the distortion isn't linear
 
         double scaledBallPosX = relativeBallPosX * length + x1;
@@ -118,8 +118,8 @@ public class FieldManager {
         //B: far point of the bottom line + camOffsetY
         //C: far point on the top line
 
-        double topLength = bottomLength + 2 * sideLength * Math.sin(3.14159/2 - horFov / 2);
-        double height = sideLength * Math.cos(90 - horFov / 2); // using the side length we can make 2 right triangles at the
+        double topLength = bottomLength + 2 * sideLength * Math.sin(Math.PI/2 - horFov / 2);
+        double height = sideLength * Math.cos(Math.PI / 2 - horFov / 2); // using the side length we can make 2 right triangles at the
         //corners of the trapezoid, from that figure out their length on the part where they cover the top length of the trapezoid.
         //so that * 2 + bottomLineLength = topLineLength
         //we will use the height for interpolation
