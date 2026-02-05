@@ -1,6 +1,9 @@
 package org.firstinspires.ftc.teamcode.manager;
 
+import android.graphics.Rect;
 import android.util.Pair;
+
+import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.vision.BallPipeline;
@@ -8,19 +11,22 @@ import org.firstinspires.ftc.teamcode.vision.BallPipeline;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FieldManager {
-    List<FieldBall> balls = new ArrayList<>();
+import lombok.var;
 
+public class FieldManager {
     final int FIELD_SIZE = 366; //cm
 
-    List<Pair<Double, Double>> ballFieldPos;
+    final int GRID_SIZE = 32;
+    final double GRID_LENGTH = (double) FIELD_SIZE / GRID_SIZE;
+
+    List<List<List<FieldBall>>> ballFieldPos;
 
     double camOffsetX, camOffsetY, horFov, verFov;
     double streamWidth, streamHeight;
 
     BallPipeline pipeline;
 
-    public FieldManager(WebcamName webcamName, double streamWidth, double streamHeight, double camOffsetX, double camOffsetY, double fov) {
+    public FieldManager(HardwareMap hardwareMap, WebcamName webcamName, double streamWidth, double streamHeight, double camOffsetX, double camOffsetY, double fov) {
         this.camOffsetX = camOffsetX;
         this.camOffsetY = camOffsetY;
         this.streamWidth = streamWidth;
@@ -28,7 +34,60 @@ public class FieldManager {
         this.horFov = fov;
         this.verFov = (streamHeight / streamWidth) * fov;
 
-        //pipeline = new BallPipeline(webcamName, streamWidth, streamHeight);
+        ballFieldPos = new ArrayList<>(GRID_SIZE);
+        for(var list : ballFieldPos) {
+            list = new ArrayList<>(GRID_SIZE);
+            for(var balls : list) {
+                balls = new ArrayList<>();
+            }
+        }
+
+        pipeline = new BallPipeline(webcamName, (int)streamWidth, (int)streamHeight,
+                hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName()));
+    }
+
+    void update(double x, double y, double pitch) {
+        List<FieldBall> balls = pipeline.getBallContours();
+        if(balls == null) return;
+
+        clearSeenArea(x, y, pitch); // TODO DONT REPEAT ALL OF THE MATH 1000X
+
+        for(FieldBall ball : balls) {
+           FieldBall fieldBall = new FieldBall
+                    (x + computeBallPosX(ball, pitch), y + computeBallPosY(ball, pitch), ball.getColor());
+
+            ballFieldPos.get(
+                    (int)Math.floor(fieldBall.getX() / (GRID_LENGTH))
+            ).get(
+                    (int)Math.floor(fieldBall.getY() / (GRID_LENGTH))
+            ).add(fieldBall);
+        }
+    }
+
+    // before we insert new balls over the visible field area we have to clear what was there before so we
+    // don't have duplicate / old data
+    void clearSeenArea(double x, double y, double pitch) {
+        double trapezoidOffsetX = Math.sin(pitch) * camOffsetY;
+
+        double bottomLength = camOffsetY * 2 * Math.tan(horFov / 2);
+
+        double sideLength = camOffsetY * Math.tan(verFov);
+
+        double topLength = bottomLength + 2 * sideLength * Math.sin(3.14159/2 - horFov / 2);
+        double height = sideLength * Math.cos(90 - horFov / 2);
+
+        x += trapezoidOffsetX;
+
+        for(double xIdx = x; xIdx < x + height; xIdx += GRID_LENGTH) {
+            for(double yIdx = y - topLength / 2; yIdx < y + sideLength / 2.0; yIdx += GRID_LENGTH) {
+                ballFieldPos.get(
+                        (int)Math.floor(x / (GRID_LENGTH))
+                ).get(
+                        (int)Math.floor(y / (GRID_LENGTH))
+                ).clear(); // clear all the balls in that square
+            } // also we kinda just shape the trapezoid into a square for this cause holy fuck I am not
+            //overcomplicating this any further
+        }
     }
 
     double computeBallPosX(FieldBall ball, double pitch) {
@@ -40,6 +99,7 @@ public class FieldManager {
 
         //also x and y are flipped because the camera stream is flipped
         double relativeBallPosX = Math.cos(ball.y / streamHeight/*normalize*/ * 3.14159 / 2 /*so we get normalized output*/);//normalized ball position relative to triangle, this calc is to account for distortion near the dges
+        double height = sideLength * Math.cos(90 - horFov / 2); // using the side length we can make 2 right triangles at the
         //also it is of note cos is used here because the distortion isn't linear
 
         double scaledBallPosX = relativeBallPosX * length + x1;
@@ -65,6 +125,7 @@ public class FieldManager {
         //we will use the height for interpolation
 
         //note for now ballPosY does not take the pitch into account as of now!!
+        //this means we don't take into account some of the distortion, hopefully trivial
 
         double ballPosY = trapezoidOffsetX + (ball.x / streamWidth) * topLength;
 

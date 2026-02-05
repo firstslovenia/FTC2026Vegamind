@@ -21,8 +21,6 @@ public class VisionTeleop extends OpMode {
 
     @Override
     public void init() {
-        pipeline = new BallPipeline(hardwareMap.get(WebcamName.class, "webcam"), 1280, 720,
-                hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName()));
     }
 
     @Override
