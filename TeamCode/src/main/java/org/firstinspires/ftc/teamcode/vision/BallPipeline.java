@@ -68,7 +68,7 @@ public class BallPipeline extends OpenCvPipeline {
     }
 
     void greenFilter(Mat input, Mat output) {
-        Scalar lowerB = new Scalar(30, 30, 30);
+        Scalar lowerB = new Scalar(30, 100, 30);
         Scalar upperB = new Scalar(100, 255, 255);
         Core.inRange(input, lowerB, upperB, output);
     }
