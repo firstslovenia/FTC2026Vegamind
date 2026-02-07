@@ -70,7 +70,8 @@ public class FieldManager {
     void clearSeenArea(double x, double y, double pitch) {
         double trapezoidOffsetX = Math.sin(pitch) * camOffsetY;
 
-        double bottomLength = camOffsetY * 2 * Math.tan(horFov / 2);
+        double baseBottomLength = camOffsetY * 2 * Math.tan(horFov / 2);
+        double bottomLength = baseBottomLength + camOffsetY / Math.sin(Math.PI/2 - horFov) * 2;
 
         double sideLength = camOffsetY * Math.tan(verFov);
 
@@ -107,18 +108,24 @@ public class FieldManager {
         return scaledBallPosX;
     }
 
+    //retardation, im not taking pitch distortion into account when that's literally the only thing I should be doing
     double computeBallPosY(FieldBall ball, double pitch) {
         double trapezoidOffsetX = Math.sin(pitch) * camOffsetY;
 
-        double bottomLength = camOffsetY * 2 * Math.tan(horFov / 2); // get the bottom line length of the trapezoid
+        double baseBottomLength = camOffsetY * 2 * Math.tan(horFov / 2); // get the bottom line length of the trapezoid
         //first we halve the horFov to get the right triangle then we double it again to get the entire length
+
+        double innerAngle = Math.PI / 2 - horFov / 2;
+
+        double bottomLength = baseBottomLength + trapezoidOffsetX / Math.sin(innerAngle) * 2;
+        // we calculate this in the same fashion we calculate the top length, we do this to account for pitch
 
         double sideLength = camOffsetY * Math.tan(verFov);// the hypotenuse of the triangle with points
         //A: the far point of the bottom line
         //B: far point of the bottom line + camOffsetY
         //C: far point on the top line
 
-        double topLength = bottomLength + 2 * sideLength * Math.sin(Math.PI/2 - horFov / 2);
+        double topLength = bottomLength + 2 * sideLength * Math.sin(innerAngle);
         double height = sideLength * Math.cos(Math.PI / 2 - horFov / 2); // using the side length we can make 2 right triangles at the
         //corners of the trapezoid, from that figure out their length on the part where they cover the top length of the trapezoid.
         //so that * 2 + bottomLineLength = topLineLength
