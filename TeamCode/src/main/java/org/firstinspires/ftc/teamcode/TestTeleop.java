@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
@@ -19,25 +20,28 @@ public class TestTeleop extends OpMode {
     DcMotor mag;
     DistanceSensor distance;
     Magazine magazine;
+    AnalogInput pot;
     @Override
     public void init() {
-        color = hardwareMap.get(ColorSensor.class, "colorAlt");
-        motor = hardwareMap.get(DcMotor.class, "intake");
-        distance = hardwareMap.get(DistanceSensor.class, "distance");
+//        color = hardwareMap.get(ColorSensor.class, "colorAlt");
+//        motor = hardwareMap.get(DcMotor.class, "intake");
+//        distance = hardwareMap.get(DistanceSensor.class, "distance");
+//
+//        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
+//                hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"));
 
-        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
-                hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"));
+        pot = hardwareMap.get(AnalogInput.class, "potentiometer");
     }
 
     @Override
     public void loop() {
-        if(gamepad1.a)
-            magazine.setIntake();
+//        if(gamepad1.a)
+//            magazine.setIntake();
+//
+//        motor.setPower(gamepad1.left_trigger * 0.3);
+//        magazine.update(telemetry);
 
-        motor.setPower(gamepad1.left_trigger * 0.3);
-        magazine.update(telemetry);
-
-        telemetry.addData("intake", hardwareMap.get(TouchSensor.class, "intakeSensor").isPressed());
+        telemetry.addData("potentiometer pos", pot.getVoltage());
 
         telemetry.update();
 

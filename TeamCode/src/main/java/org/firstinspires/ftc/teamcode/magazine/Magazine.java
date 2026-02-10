@@ -1,16 +1,16 @@
 package org.firstinspires.ftc.teamcode.magazine;
 
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.teamcode.color.BallColor;
+import org.firstinspires.ftc.teamcode.pid.MiniPID;
 
 public class Magazine {
     DcMotor magazineMotor;
@@ -38,8 +38,7 @@ public class Magazine {
 
     public enum State {
         IDLE,
-        BROAD_ROTATE,
-        ADJUST_ROTATE,
+        ROTATE,
         DEPOSIT,
     };
 
@@ -51,7 +50,13 @@ public class Magazine {
 
     Color[] slotColors = {Color.NONE, Color.NONE, Color.NONE};
 
+    double[] potentiometerPositions = {0, 0, 0, 0, 0, 0};
+
+    AnalogInput potentiometer;
+
     State state = State.IDLE;
+
+    MiniPID pid;
 
     public Magazine(DcMotor magazineMotor, Servo helpServo, TouchSensor intakeSensor, TouchSensor outtakeSensor,
                     ColorSensor colorSensor, DistanceSensor distanceSensor) {
@@ -68,6 +73,8 @@ public class Magazine {
         slotColors = new Color[]{Color.NONE, Color.NONE, Color.NONE};
 
         servoCycleTimer = new ElapsedTime();
+
+        pid = new MiniPID(0.1, 0.01, 0);
     }
 
     double round(double x, int decimals) {
@@ -106,25 +113,19 @@ public class Magazine {
 
         if(index >= 6 || index < 0) throw new ArrayIndexOutOfBoundsException();
 
-        isOuttakeTarget = index >= 3;
-        index %= 3;
-
         if(currIndex == index) return true;
-
-        dir = (Math.abs(currIndex - index) == 1 ? 1 : -1) * (currIndex - index < 0 ? -1 : 1);
-        //double targetPos = magazineMotor.getCurrentPosition() + dir * (slotPeriod - margin); // if this shit works first try i'll start believing in god
-        double targetPos = (index - 1) * slotPeriod;
-        dir = targetPos > 0 ? 1 : -1;
-        if(isOuttakeTarget)
-            targetPos += outtakePosOffset;
 
         currIndex = index;
 
-        magazineMotor.setTargetPosition((int)targetPos);
-        magazineMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        magazineMotor.setPower(adjustPower);
+        //double targetPos = magazineMotor.getCurrentPosition() + dir * (slotPeriod - margin); // if this shit works first try i'll start believing in god
+       // double targetPos = potentiometerPositions[currIndex];
+       // dir = potentiometer.getVoltage() > targetPos ? 1 : -1;
 
-        state = State.BROAD_ROTATE;
+
+       // magazineMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+       // magazineMotor.setPower(1.0f * dir);
+
+        state = State.ROTATE;
 
         return true;
     }
@@ -144,22 +145,11 @@ public class Magazine {
         switch(state) {
             case IDLE:
                 break;
-            case BROAD_ROTATE:
-                if(!approxEq(magazineMotor.getCurrentPosition(), magazineMotor.getTargetPosition(), 10))
+            case ROTATE:
+                magazineMotor.setPower(pid.getOutput(potentiometer.getVoltage(), potentiometerPositions[currIndex]));
+                if(!approxEq(potentiometer.getVoltage(), potentiometerPositions[currIndex], 0.1))
                     break;
-                state = State.ADJUST_ROTATE;
-                break;
-            case ADJUST_ROTATE:
-                TouchSensor sensor = isOuttakeTarget ? outtakeSensor : intakeSensor;
-
-                magazineMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                magazineMotor.setPower(adjustPower * dir);
-
-                if(!sensor.isPressed()) break;
-
-                magazineMotor.setPower(0.0f);
-
-                state = State.IDLE;
+                state = State.DEPOSIT;
                 break;
             case DEPOSIT:
                 if(servoCycleTimer.milliseconds() < servoCycleTime) break;
