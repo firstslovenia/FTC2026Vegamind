@@ -50,9 +50,7 @@ public class Magazine {
 
     Color[] slotColors = {Color.NONE, Color.NONE, Color.NONE};
 
-    double[] potentiometerPositions = {0, 0, 0, 0, 0, 0};
-
-    AnalogInput potentiometer;
+    double[] motorPositions = {0.0, -2650, 2548, -3946, 1240, -1230};
 
     State state = State.IDLE;
 
@@ -67,14 +65,13 @@ public class Magazine {
         this.colorSensor = colorSensor;
         this.distanceSensor = distanceSensor;
 
-        magazineMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         magazineMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         slotColors = new Color[]{Color.NONE, Color.NONE, Color.NONE};
 
         servoCycleTimer = new ElapsedTime();
 
-        pid = new MiniPID(0.1, 0.01, 0);
+        pid = new MiniPID(0.00025, 0.00008, 0.00015);
     }
 
     double round(double x, int decimals) {
@@ -102,14 +99,14 @@ public class Magazine {
         return false;
     }
 
-    boolean rotateToBall(int index) {
-        if(state != State.IDLE) return false;
+    public boolean rotateToBall(int index) {
+        //if(state != State.IDLE) return false;
 
-        if(helpServo.getPosition() == 1) {
-            magazineMotor.setPower(0.0f);
-            throw new RuntimeException(); // THIS SHOULD BE HANDLED OUTSIDE
-            //important failsafe
-        }
+      //  if(helpServo.getPosition() == 0) {
+      //      magazineMotor.setPower(0.0f);
+      //      throw new RuntimeException(); // THIS SHOULD BE HANDLED OUTSIDE
+      //      //important failsafe
+      //  }
 
         if(index >= 6 || index < 0) throw new ArrayIndexOutOfBoundsException();
 
@@ -122,7 +119,8 @@ public class Magazine {
        // dir = potentiometer.getVoltage() > targetPos ? 1 : -1;
 
 
-       // magazineMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        magazineMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        magazineMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
        // magazineMotor.setPower(1.0f * dir);
 
         state = State.ROTATE;
@@ -133,7 +131,7 @@ public class Magazine {
     public void update(Telemetry telemetry) {
         if(telemetry != null) {
             telemetry.addData("curr mag pos:", magazineMotor.getCurrentPosition());
-            telemetry.addData("target mag pos:", magazineMotor.getTargetPosition());
+            telemetry.addData("target mag pos:", motorPositions[currIndex]);
             telemetry.addData("target outtake:", isOuttakeTarget);
             telemetry.addData("curr state", state);
             telemetry.addData("currIndex", currIndex);
@@ -146,10 +144,10 @@ public class Magazine {
             case IDLE:
                 break;
             case ROTATE:
-                magazineMotor.setPower(pid.getOutput(potentiometer.getVoltage(), potentiometerPositions[currIndex]));
-                if(!approxEq(potentiometer.getVoltage(), potentiometerPositions[currIndex], 0.1))
-                    break;
-                state = State.DEPOSIT;
+                double p = pid.getOutput(magazineMotor.getCurrentPosition(), motorPositions[currIndex]);
+                magazineMotor.setPower(p);
+                telemetry.addData("power", p);
+                //state = State.DEPOSIT;
                 break;
             case DEPOSIT:
                 if(servoCycleTimer.milliseconds() < servoCycleTime) break;
@@ -163,6 +161,7 @@ public class Magazine {
                 }
         }
         updateColorData();
+
     }
 
     void updateColorData() {

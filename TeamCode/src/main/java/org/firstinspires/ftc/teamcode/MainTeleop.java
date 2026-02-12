@@ -43,8 +43,8 @@ public class MainTeleop extends OpMode{
 
         primaryMap = new PrimaryMap(gamepad1);
         secondaryMap = new SecondaryMap(gamepad2);
-        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
-                hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"));
+       // magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
+         //       hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"));
         shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"));
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"));
         shooterManager = new ShooterManager(magazine, shooter, 23);

@@ -27,10 +27,8 @@ public class TestTeleop extends OpMode {
 //        motor = hardwareMap.get(DcMotor.class, "intake");
 //        distance = hardwareMap.get(DistanceSensor.class, "distance");
 //
-//        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
-//                hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"));
-
-        pot = hardwareMap.get(AnalogInput.class, "potentiometer");
+        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
+                hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"));
     }
 
     @Override
@@ -41,7 +39,25 @@ public class TestTeleop extends OpMode {
 //        motor.setPower(gamepad1.left_trigger * 0.3);
 //        magazine.update(telemetry);
 
-        telemetry.addData("potentiometer pos", pot.getVoltage());
+        if(gamepad1.triangle) {
+            magazine.rotateToBall(0);
+            magazine.update(telemetry);
+        }
+        else if(gamepad1.circle) {
+            magazine.rotateToBall(3);
+            magazine.update(telemetry);
+        }
+        else if(gamepad1.square) {
+            magazine.rotateToBall(1);
+            magazine.update(telemetry);
+        }
+        else if(gamepad1.cross) {
+            magazine.rotateToBall(4);
+            magazine.update(telemetry);
+        } else {
+            hardwareMap.get(DcMotor.class, "magazine").setPower(0.0);
+        }
+
 
         telemetry.update();
 
