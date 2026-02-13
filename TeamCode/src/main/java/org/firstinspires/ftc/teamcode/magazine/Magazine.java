@@ -80,6 +80,63 @@ public class Magazine {
         return Math.abs(a-b) <= tolerance;
     }
 
+    void calibrate() {
+        int x = 0; // Sensor len
+        int s = 0; // Slack
+        magazineMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //magazineMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        // Clockwise
+        if (intakeSensor.isPressed()) {
+            // If initially pressed, rotate until not pressed, then do 1st iteration.
+            int b = 0;
+            while (!intakeSensor.isPressed()) {
+                magazineMotor.setTargetPosition(b);
+                b++;
+            }
+        }
+        // 1st iter - Disregarded
+        int i1 = 0;
+        while (!intakeSensor.isPressed()) {
+            magazineMotor.setTargetPosition(i1);
+            i1++;
+        }
+        // 2nd iter - counted
+        i1 = 0; // Clockwise step count for 1 rotation
+        while (!intakeSensor.isPressed()) {
+            magazineMotor.setTargetPosition(i1);
+            i1++;
+        }
+
+        magazineMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER); // Reset
+
+        // Counter-Clockwise
+        if (intakeSensor.isPressed()) {
+            // If initially pressed, rotate until not pressed, then do 1st iteration.
+            int b = 0;
+            while (intakeSensor.isPressed()) {
+                magazineMotor.setTargetPosition(b);
+                b--;
+            }
+        }
+        // 1st iter - Disregarded
+        int i2 = 0;
+        while (!intakeSensor.isPressed()) {
+            magazineMotor.setTargetPosition(i1);
+            i2++;
+        }
+        // 2nd iter - counted
+        i2 = 0; // Counter-Clockwise step count for 1 rotation
+        while (!intakeSensor.isPressed()) {
+            magazineMotor.setTargetPosition(i1);
+            i2++;
+        }
+
+        // TODO: Make the above code not so retarded
+
+        s = Math.abs(i1 - i2);
+    }
+
     boolean goToPosEncoder(int p) {
         if (approxEq(magazineMotor.getCurrentPosition(), p, 2)) {
             magazineMotor.setPower(0.0f);
