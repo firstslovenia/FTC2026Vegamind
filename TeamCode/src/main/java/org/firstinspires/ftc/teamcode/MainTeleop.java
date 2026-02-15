@@ -20,7 +20,7 @@ import org.firstinspires.ftc.teamcode.magazine.Magazine;
 import org.firstinspires.ftc.teamcode.manager.ShooterManager;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 
-public class MainTeleop extends OpMode{
+public class MainTeleop extends OpMode {
 
     BallIO shooter;
     BallIO intake;
@@ -50,10 +50,13 @@ public class MainTeleop extends OpMode{
         shooterManager = new ShooterManager(magazine, shooter, 23);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
+
+        /*
         follower.followPath(path);
         while(follower.isBusy()) {
             follower.update();
         }
+        */
     }
 
     @Override

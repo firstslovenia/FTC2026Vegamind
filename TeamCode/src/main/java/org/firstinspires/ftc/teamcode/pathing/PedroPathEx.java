@@ -1,5 +1,13 @@
-public static class Paths {
-    public PathChain Path15;
+package org.firstinspires.ftc.teamcode.pathing;
+
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierCurve;
+import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.PathChain;
+
+public class PedroPathEx {
+    public PathChain Path1;
     public PathChain Path2;
     public PathChain Path3;
     public PathChain Path4;
@@ -21,7 +29,7 @@ public static class Paths {
     public PathChain Path20;
     public PathChain Path21;
 
-    public Paths(Follower follower) {
+    public PedroPathEx(Follower follower) {
       Path15 = follower.pathBuilder()
           .addPath(
             new BezierLine(
