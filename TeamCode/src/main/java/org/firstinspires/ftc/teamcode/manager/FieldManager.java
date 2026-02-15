@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.manager;
 
+import android.renderscript.Script;
 import android.util.Pair;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -7,6 +8,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.vision.BallPipeline;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +22,8 @@ public class FieldManager {
     final int GRID_SIZE = 32;
     final double GRID_LENGTH = (double) FIELD_SIZE / GRID_SIZE;
 
-    List<List<List<FieldBall>>> ballFieldPos;
+    //List<List<List<FieldBall>>> ballFieldPos;
+    List<FieldBall> fieldBalls;
 
     double camOffsetX, camOffsetY, horFov, verFov;
     double streamWidth, streamHeight;
@@ -35,13 +38,14 @@ public class FieldManager {
         this.horFov = fov;
         this.verFov = (streamHeight / streamWidth) * fov;
 
-        ballFieldPos = new ArrayList<>(GRID_SIZE);
+        /*ballFieldPos = new ArrayList<>(GRID_SIZE);
         for(var list : ballFieldPos) {
             list = new ArrayList<>(GRID_SIZE);
             for(var balls : list) {
                 balls = new ArrayList<>();
             }
-        }
+        }*/
+        fieldBalls = new ArrayList<>();
 
         pipeline = new BallPipeline(webcamName, (int)streamWidth, (int)streamHeight,
                 hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName()));
@@ -54,14 +58,8 @@ public class FieldManager {
         clearSeenArea(x, y, pitch); // TODO DONT REPEAT ALL OF THE MATH 1000X
 
         for(FieldBall ball : balls) {
-           FieldBall fieldBall = new FieldBall
-                    (x + computeBallPosX(ball, pitch), y + computeBallPosY(ball, pitch), ball.getColor());
-
-            ballFieldPos.get(
-                    (int)Math.floor(fieldBall.getX() / (GRID_LENGTH))
-            ).get(
-                    (int)Math.floor(fieldBall.getY() / (GRID_LENGTH))
-            ).add(fieldBall);
+          fieldBalls.add(new FieldBall(
+                    x + computeBallPosX(ball, pitch), y + computeBallPosY(ball, pitch), ball.getColor()));
         }
     }
 
@@ -80,7 +78,7 @@ public class FieldManager {
 
         x += trapezoidOffsetX;
 
-        for(double xIdx = x; xIdx < x + height; xIdx += GRID_LENGTH) {
+        /*for(double xIdx = x; xIdx < x + height; xIdx += GRID_LENGTH) {
             for(double yIdx = y - topLength / 2; yIdx < y + sideLength / 2.0; yIdx += GRID_LENGTH) {
                 ballFieldPos.get(
                         (int)Math.floor(x / (GRID_LENGTH))
@@ -89,6 +87,14 @@ public class FieldManager {
                 ).clear(); // clear all the balls in that square
             } // also we kinda just shape the trapezoid into a square for this cause holy fuck I am not
             //overcomplicating this any further
+        }
+         */
+
+        for(FieldBall ball : fieldBalls) {
+            if(ball.getX() < x && ball.getX() > x + height ||
+                    ball.getY() < y - topLength / 2 || ball.getY() > y + sideLength) continue;
+
+            fieldBalls.remove(ball);
         }
     }
 

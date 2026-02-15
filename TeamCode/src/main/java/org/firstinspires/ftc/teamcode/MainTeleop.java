@@ -50,6 +50,10 @@ public class MainTeleop extends OpMode{
         shooterManager = new ShooterManager(magazine, shooter, 23);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
+        follower.followPath(path);
+        while(follower.isBusy()) {
+            follower.update();
+        }
     }
 
     @Override
