@@ -59,7 +59,7 @@ public class TestTeleop extends OpMode {
         }
 
 
-        telemetry.update();
+        //telemetry.update();
 
     }
 }

@@ -14,9 +14,7 @@ public class BallNetwork extends Network {
         nodes.clear();
 
         for(FieldBall ball : balls) {
-            nodes.add(
-                    new Node()
-            )
+
         }
     }
 

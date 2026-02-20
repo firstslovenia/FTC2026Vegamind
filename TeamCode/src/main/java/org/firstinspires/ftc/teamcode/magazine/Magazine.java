@@ -50,7 +50,7 @@ public class Magazine {
 
     Color[] slotColors = {Color.NONE, Color.NONE, Color.NONE};
 
-    double[] motorPositions = {0.0, -2650, 2548, -3946, 1240, -1230};
+    double[] motorPositions = {0.0, 2780, -2530, 4096, -1220, 1380};
 
     State state = State.IDLE;
 
@@ -71,7 +71,7 @@ public class Magazine {
 
         servoCycleTimer = new ElapsedTime();
 
-        pid = new MiniPID(0.00025, 0.00008, 0.00015);
+        pid = new MiniPID(0.00020, 0.00010, 0.00015);
     }
 
     double round(double x, int decimals) {
@@ -129,7 +129,7 @@ public class Magazine {
     }
 
     public void update(Telemetry telemetry) {
-        if(telemetry != null) {
+        /*if(telemetry != null) {
             telemetry.addData("curr mag pos:", magazineMotor.getCurrentPosition());
             telemetry.addData("target mag pos:", motorPositions[currIndex]);
             telemetry.addData("target outtake:", isOuttakeTarget);
@@ -138,15 +138,14 @@ public class Magazine {
             telemetry.addData("mag slot 1:", slotColors[0]);
             telemetry.addData("mag slot 2:", slotColors[1]);
             telemetry.addData("mag slot 3:", slotColors[2]);
-        }
+        }*/
 
         switch(state) {
             case IDLE:
                 break;
             case ROTATE:
-                double p = pid.getOutput(magazineMotor.getCurrentPosition(), motorPositions[currIndex]);
+                double p = pid.getOutput(-magazineMotor.getCurrentPosition(), motorPositions[currIndex]);
                 magazineMotor.setPower(p);
-                telemetry.addData("power", p);
                 //state = State.DEPOSIT;
                 break;
             case DEPOSIT:
