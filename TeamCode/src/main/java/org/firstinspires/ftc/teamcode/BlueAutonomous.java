@@ -53,47 +53,89 @@ public class BlueAutonomous extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
         pedroPathEx = new PedroPathEx(follower);
+        follower.setPose(new Pose(56, 8));
+    }
+
+    void waitF() {
+        while (follower.isBusy()) {
+            follower.update();
+        }
     }
 
     @Override
     public void start() {
         // Sequence; TODO: Make it more readable
         follower.followPath(pedroPathEx.Path1);
-        while(follower.isBusy()) {
-            follower.update();
-        }
-        intake.windup();
+        waitF();
+        //intake.windup();
         follower.followPath(pedroPathEx.Path2);
-        while(follower.isBusy()) {
-            follower.update();
-        }
+        waitF();
         // Rotate magazine here
         follower.followPath(pedroPathEx.Path3);
-        while(follower.isBusy()) {
-            follower.update();
-        }
+        waitF();
         // Rotate magazine here
         follower.followPath(pedroPathEx.Path4);
-        while(follower.isBusy()) {
-            follower.update();
-        }
+        waitF();
         // Rotate magazine here; move uptop
-        intake.winddown();
+        //intake.winddown();
 
         // Move to shoot
         follower.followPath(pedroPathEx.Path5);
-        while(follower.isBusy()) {
-            follower.update();
-        }
+        waitF();
         follower.followPath(pedroPathEx.Path6);
-        while(follower.isBusy()) {
-            follower.update();
-        }
+        waitF();
         follower.followPath(pedroPathEx.Path7);
-        while(follower.isBusy()) {
-            follower.update();
-        }
-        // Shooting sequence
+        waitF();
+        // Shooting sequence here idk just rotate the mag and do the thing
+        //shooterManager.start();
+        //while(shooterManager.isActive());
+        // shooty shooty
+
+        follower.followPath(pedroPathEx.Path8);
+        waitF();
+        //intake.windup();
+        follower.followPath(pedroPathEx.Path9);
+        waitF();
+        //rotate mag
+        follower.followPath(pedroPathEx.Path10);
+        waitF();
+        //rotate mag
+        follower.followPath(pedroPathEx.Path11);
+        waitF();
+        //intake.winddown();
+
+        // Move to shoot
+        follower.followPath(pedroPathEx.Path12);
+        waitF();
+        follower.followPath(pedroPathEx.Path13);
+        waitF();
+
+        //shooterManager.start();
+        //while(shooterManager.isActive());
+        // shooty shooty
+
+        follower.followPath(pedroPathEx.Path14);
+        waitF();
+        //intake.windup();
+        follower.followPath(pedroPathEx.Path15);
+        waitF();
+        //rotate mag
+        follower.followPath(pedroPathEx.Path16);
+        waitF();
+        //rotate mag
+        follower.followPath(pedroPathEx.Path17);
+        waitF();
+        //intake.winddown();
+
+        // move to shoot
+        follower.followPath(pedroPathEx.Path18);
+        waitF();
+        follower.followPath(pedroPathEx.Path19);
+        waitF();
+
+        //shooterManager.start();
+        //while(shooterManager.isActive());
+        // shooty shooty
     }
 
     @Override

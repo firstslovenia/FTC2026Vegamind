@@ -144,9 +144,16 @@ public class Magazine {
             case IDLE:
                 break;
             case ROTATE:
-                double p = pid.getOutput(-magazineMotor.getCurrentPosition(), motorPositions[currIndex]);
+                double pos = magazineMotor.getCurrentPosition();
+                double p = pid.getOutput(-pos, motorPositions[currIndex]);
                 magazineMotor.setPower(p);
-                //state = State.DEPOSIT;
+
+                if(approxEq(pos, motorPositions[currIndex], 30)) {
+                    state = State.DEPOSIT;
+                    magazineMotor.setPower(0.0);
+                    pid.reset();
+                }
+
                 break;
             case DEPOSIT:
                 if(servoCycleTimer.milliseconds() < servoCycleTime) break;
