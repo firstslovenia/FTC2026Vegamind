@@ -28,7 +28,7 @@ public class BallPipeline extends OpenCvPipeline {
 
     Mat hierarchy = new Mat(); // TOOD can this be null?
 
-    List<MatOfPoint> contours = new ArrayList<>();
+    final List<MatOfPoint> contours = new ArrayList<>();
     boolean updatedContours = false;
 
     BallColor currentColor = BallColor.GREEN;
@@ -53,7 +53,7 @@ public class BallPipeline extends OpenCvPipeline {
             @Override
             public void onOpened() {
                 cam.setPipeline(pipeline);
-                cam.startStreaming(streamWidth, streamHeight, OpenCvCameraRotation.SIDEWAYS_RIGHT);
+                cam.startStreaming(streamWidth, streamHeight, OpenCvCameraRotation.UPRIGHT);
             }
 
             @Override
@@ -84,7 +84,7 @@ public class BallPipeline extends OpenCvPipeline {
     void filterContours(List<MatOfPoint> contours) {
         for(int i = 0; i < contours.size(); i++) {
             double area = Imgproc.contourArea(contours.get(i));
-            if(area > 25000) { // no balls :(
+            if(area > 500) { // no balls :(
                 continue;
             }
 
@@ -93,7 +93,7 @@ public class BallPipeline extends OpenCvPipeline {
         }
     }
 
-    List<FieldBall> contour2Ball(List<MatOfPoint> contours) {
+    List<FieldBall> contour2Ball() {
         List<FieldBall> balls = new ArrayList<>();
         synchronized (contours) {
             for(MatOfPoint contour : contours) {
@@ -111,7 +111,7 @@ public class BallPipeline extends OpenCvPipeline {
         if(!updatedContours) return null;
         updatedContours = false; // make sure we dont waste resources by going over the same contours twice
 
-        return contour2Ball(contours);
+        return contour2Ball();
     }
 
     public BallColor getLastUpdateColor() {
@@ -121,7 +121,6 @@ public class BallPipeline extends OpenCvPipeline {
 
     @Override
     public Mat processFrame(Mat input) {
-        contours.clear();
         updatedContours = true;
 
         Imgproc.cvtColor(input, hsvFrame, Imgproc.COLOR_RGB2HSV);
@@ -139,6 +138,7 @@ public class BallPipeline extends OpenCvPipeline {
 
         Point offset = new Point(0, 0);
         synchronized(contours) {
+            contours.clear();
             Imgproc.findContours(filteredFrame, contours, hierarchy,
                     Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE, offset);
 

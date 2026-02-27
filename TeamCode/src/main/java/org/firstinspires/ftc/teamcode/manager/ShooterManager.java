@@ -53,6 +53,7 @@ public class ShooterManager {
         if(currState != State.INACTIVE) return false;
 
         currState = State.BALL_SELECT;
+        shotsLeft=3;
         return true;
     }
 
@@ -88,6 +89,7 @@ public class ShooterManager {
 
     void windupState() {
         if (shotsLeft > 0) currState = State.SHOOT;
+        else currState = State.WINDDOWN;
         shooter.windup();
         windupTimer.startTime();
     }
@@ -120,6 +122,7 @@ public class ShooterManager {
             telemetry.addData("shootmanager ballindex: ", currSlot);
             telemetry.addData("shootmanager shots: ", shotsLeft);
             telemetry.addData("shootmanager state: ", currState);
+            //telemetry.addData("shootmanager shotsleft: ", currSt);
         }
 
         switch(currState) {

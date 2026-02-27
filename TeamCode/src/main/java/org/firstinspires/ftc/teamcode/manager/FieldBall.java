@@ -3,8 +3,10 @@ package org.firstinspires.ftc.teamcode.manager;
 import org.firstinspires.ftc.teamcode.color.BallColor;
 
 import lombok.Getter;
+import lombok.Setter;
 
 public class FieldBall {
+
 
     public FieldBall(double x, double y) {
         this.x = x;
@@ -23,4 +25,7 @@ public class FieldBall {
 
     @Getter
     BallColor color;
+
+    @Getter @Setter
+    double realX, realY;
 }

@@ -48,7 +48,7 @@ public class Magazine {
         GREEN
     }
 
-    Color[] slotColors = {Color.NONE, Color.NONE, Color.NONE};
+    Color[] slotColors = {Color.GREEN, Color.GREEN, Color.PURPLE};
 
     double[] motorPositions = {0.0, 2780, -2530, 4096, -1220, 1380};
 
@@ -67,7 +67,7 @@ public class Magazine {
 
         magazineMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        slotColors = new Color[]{Color.NONE, Color.NONE, Color.NONE};
+        slotColors = new Color[]{Color.PURPLE, Color.GREEN, Color.GREEN};
 
         servoCycleTimer = new ElapsedTime();
 
@@ -129,7 +129,7 @@ public class Magazine {
     }
 
     public void update(Telemetry telemetry) {
-        /*if(telemetry != null) {
+        if(telemetry != null) {
             telemetry.addData("curr mag pos:", magazineMotor.getCurrentPosition());
             telemetry.addData("target mag pos:", motorPositions[currIndex]);
             telemetry.addData("target outtake:", isOuttakeTarget);
@@ -138,17 +138,17 @@ public class Magazine {
             telemetry.addData("mag slot 1:", slotColors[0]);
             telemetry.addData("mag slot 2:", slotColors[1]);
             telemetry.addData("mag slot 3:", slotColors[2]);
-        }*/
+        }
 
         switch(state) {
             case IDLE:
                 break;
             case ROTATE:
-                double pos = magazineMotor.getCurrentPosition();
-                double p = pid.getOutput(-pos, motorPositions[currIndex]);
+                double pos = -magazineMotor.getCurrentPosition();
+                double p = pid.getOutput(pos, motorPositions[currIndex]);
                 magazineMotor.setPower(p);
 
-                if(approxEq(pos, motorPositions[currIndex], 30)) {
+                if(approxEq(pos, motorPositions[currIndex], 20) && p < 0.1) {
                     state = State.DEPOSIT;
                     magazineMotor.setPower(0.0);
                     pid.reset();
@@ -163,6 +163,7 @@ public class Magazine {
                     servoCycleTimer.reset();
                     break;
                 } else {
+                    helpServo.setPosition(1);
                     state = State.IDLE;
                 }
         }
@@ -206,7 +207,7 @@ public class Magazine {
     public void depositBall() {
         if(state != State.IDLE) throw new RuntimeException();
 
-        slotColors[currIndex] = Color.NONE;
+        //TESTING slotColors[currIndex] = Color.NONE;
         state = State.DEPOSIT;
         helpServo.setPosition(1.0);
         servoCycleTimer.reset();
