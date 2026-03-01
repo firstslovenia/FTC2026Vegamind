@@ -53,6 +53,7 @@ public class BallPipeline extends OpenCvPipeline {
             @Override
             public void onOpened() {
                 cam.setPipeline(pipeline);
+                cam.showFpsMeterOnViewport(true);
                 cam.startStreaming(streamWidth, streamHeight, OpenCvCameraRotation.UPRIGHT);
             }
 

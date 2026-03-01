@@ -46,10 +46,10 @@ public class RedAutonomous extends OpMode {
         primaryMap = new PrimaryMap(gamepad1);
         secondaryMap = new SecondaryMap(gamepad2);
          magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
-               hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"));
+               hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"), 50);
         shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"));
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"));
-        shooterManager = new ShooterManager(magazine, shooter, 23);
+        shooterManager = new ShooterManager(magazine, shooter, 23, 100);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
         pedroPathEx = new PedroPathRed(follower);
@@ -70,9 +70,6 @@ public class RedAutonomous extends OpMode {
         // shoot
         shooterManager.start();
         while(shooterManager.isActive()) {
-            shooterManager.update(telemetry);
-            magazine.update(telemetry);
-            telemetry.update();
         }        follower.followPath(pedroPathEx.Path2);
         waitF();
         intake.windup();
@@ -90,8 +87,6 @@ public class RedAutonomous extends OpMode {
         // shoot
         shooterManager.start();
         while(shooterManager.isActive()) {
-            shooterManager.update(telemetry);
-            magazine.update(telemetry);
             telemetry.update();
         }
         follower.followPath(pedroPathEx.Path7);
@@ -111,8 +106,6 @@ public class RedAutonomous extends OpMode {
         // shoot
         shooterManager.start();
         while(shooterManager.isActive()) {
-            shooterManager.update(telemetry);
-            magazine.update(telemetry);
             telemetry.update();
         }
         follower.followPath(pedroPathEx.Path12);
@@ -132,8 +125,6 @@ public class RedAutonomous extends OpMode {
         // shoot
         shooterManager.start();
         while(shooterManager.isActive()) {
-            shooterManager.update(telemetry);
-            magazine.update(telemetry);
             telemetry.update();
         }        // Go to center
         follower.followPath(pedroPathEx.Path17);
