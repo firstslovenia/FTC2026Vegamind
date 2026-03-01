@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.color.BallColor;
 import org.firstinspires.ftc.teamcode.process.Process;
 import org.firstinspires.ftc.teamcode.vision.BallPipeline;
 
@@ -75,9 +76,10 @@ public class FieldManager extends Process {
         List<FieldBall> balls = pipeline.getBallContours();
     }
 
-    void computePositions(double pitch, double camPlaneX, double camPlaneY) {
+    public synchronized FieldStruct computePositions(double pitch, double camPlaneX, double camPlaneY) {
         List<FieldBall> balls = pipeline.getBallContours();
-        if (balls == null || balls.isEmpty()) { return; }
+        BallColor lastUpdate = pipeline.getLastUpdateColor();
+        if (balls == null || balls.isEmpty()) { return null; }
 
         if(telemetry != null)
             telemetry.addData("Ball Count", balls.toArray().length);
@@ -95,7 +97,7 @@ public class FieldManager extends Process {
             double rz = Yn * Math.sin(pitch) + Math.cos(pitch); // In radians
 
             // Solve for intersection with ground
-            double t = -(this.camOffsetY / rz); // camOffsetY is camera height
+            double t = -(this.camOffsetY / rz); // camOffsetY is camera height (any unit - will match output)
 
             // Final coordinates
             fieldBall.realX = camPlaneX + t * rx;
@@ -108,5 +110,7 @@ public class FieldManager extends Process {
                 this.telemetry.update();
             }
         }
+
+        return new FieldStruct(balls, lastUpdate);
     }
 }

@@ -16,7 +16,6 @@ import org.firstinspires.ftc.teamcode.input.PrimaryMap;
 import org.firstinspires.ftc.teamcode.input.SecondaryMap;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
 import org.firstinspires.ftc.teamcode.manager.ShooterManager;
-import org.firstinspires.ftc.teamcode.pathing.PedroPathEx;
 import org.firstinspires.ftc.teamcode.pathing.PedroPathRed;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 

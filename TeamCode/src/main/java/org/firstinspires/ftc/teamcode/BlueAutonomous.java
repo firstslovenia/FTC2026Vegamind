@@ -1,24 +1,29 @@
 package org.firstinspires.ftc.teamcode;
 
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.gamepad1;
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.gamepad2;
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
+import android.graphics.Path;
+import android.graphics.Point;
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.auto.Constants;
 import org.firstinspires.ftc.teamcode.drive.Drive;
 import org.firstinspires.ftc.teamcode.input.PrimaryMap;
 import org.firstinspires.ftc.teamcode.input.SecondaryMap;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
+import org.firstinspires.ftc.teamcode.manager.FieldBall;
+import org.firstinspires.ftc.teamcode.manager.FieldManager;
+import org.firstinspires.ftc.teamcode.manager.FieldStruct;
 import org.firstinspires.ftc.teamcode.manager.ShooterManager;
-import org.firstinspires.ftc.teamcode.pathing.PedroPathEx;
+import org.firstinspires.ftc.teamcode.pathing.PedroPathBlue;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
+import org.firstinspires.ftc.teamcode.util.MapPoint;
 
 @Autonomous(name="Blue Autonomous", group="FTC 26")
 public class BlueAutonomous extends OpMode {
@@ -32,7 +37,8 @@ public class BlueAutonomous extends OpMode {
     Drive drive;
     Follower follower;
     ShooterManager shooterManager;
-    PedroPathEx pedroPathEx;
+    PedroPathBlue pedroPathBlue;
+    FieldManager fieldManager;
 
 
     double targetHeading = 0;
@@ -52,8 +58,13 @@ public class BlueAutonomous extends OpMode {
         shooterManager = new ShooterManager(magazine, shooter, 23, 100);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
-        pedroPathEx = new PedroPathEx(follower);
-        follower.setPose(new Pose(56, 8));
+        pedroPathBlue = new PedroPathBlue(follower);
+
+        follower.setPose(new Pose(34.25, 135.75));
+
+        fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
+                1280, 720, 0, 70, .35, 200, telemetry);
+        fieldManager.start();
     }
 
     void waitF() {
@@ -62,103 +73,54 @@ public class BlueAutonomous extends OpMode {
         }
     }
 
+    FieldBall closestToOrigin(FieldStruct struct) {
+        if (struct == null || struct.getBalls() == null) { return null; }
+
+        FieldBall closest = struct.getBalls().get(0);
+        double minDistanceSquared = Math.pow(closest.getRealX(), 2) + Math.pow(closest.getRealY(), 2);
+
+        for (int i = 1; i < struct.getBalls().toArray().length; i++) {
+            double distanceSquared = Math.pow(struct.getBalls().get(i).getRealX(), 2) + Math.pow(struct.getBalls().get(i).getRealY(), 2);
+            if (distanceSquared < minDistanceSquared) {
+                minDistanceSquared = distanceSquared;
+                closest = struct.getBalls().get(i);
+            }
+        }
+
+        return closest;
+    }
+
+    MapPoint mapToField(FieldBall target) {
+        double toX = follower.getPose().getX() + target.getRealX();
+        double toY = follower.getPose().getY() + target.getRealY();
+
+        return new MapPoint(toX, toY, follower.getHeading(), follower.getHeading() + 90); // Heading is in radians
+    }
+
     @Override
     public void start() {
-        // Sequence; TODO: Make it more readable
-        follower.followPath(pedroPathEx.Path1);
-        waitF();
-        //intake.windup();
-        follower.followPath(pedroPathEx.Path2);
-        waitF();
-        // Rotate magazine here
-        follower.followPath(pedroPathEx.Path3);
-        waitF();
-        // Rotate magazine here
-        follower.followPath(pedroPathEx.Path4);
-        waitF();
-        // Rotate magazine here; move uptop
-        //intake.winddown();
-
-        // Move to shoot
-        follower.followPath(pedroPathEx.Path5);
-        waitF();
-        follower.followPath(pedroPathEx.Path6);
-        waitF();
-        follower.followPath(pedroPathEx.Path7);
-        waitF();
-        // Shooting sequence here idk just rotate the mag and do the thing
-        //shooterManager.start();
-        //while(shooterManager.isActive());
-        // shooty shooty
-
-        follower.followPath(pedroPathEx.Path8);
-        waitF();
-        //intake.windup();
-        follower.followPath(pedroPathEx.Path9);
-        waitF();
-        //rotate mag
-        follower.followPath(pedroPathEx.Path10);
-        waitF();
-        //rotate mag
-        follower.followPath(pedroPathEx.Path11);
-        waitF();
-        //intake.winddown();
-
-        // Move to shoot
-        follower.followPath(pedroPathEx.Path12);
-        waitF();
-        follower.followPath(pedroPathEx.Path13);
+        // TODO: Go to Shooting path first for preload; I'm skipping since I just want to scout balls right now
+        follower.followPath(pedroPathBlue.PathScout1);
         waitF();
 
-        //shooterManager.start();
-        //while(shooterManager.isActive());
-        // shooty shooty
+        FieldStruct struct = fieldManager.computePositions(3.141593/4, 0, 0); // Some random value for the pitch
+        MapPoint closest = mapToField(closestToOrigin(struct)); // Unless something goes really wrong, this should always be on our side
+        PathChain newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                new Pose(closest.getX(), closest.getY()) // TODO: This will b-line for the ball currently; move only one coordinate at a time to get more perpendicular movement
+                        )
+                )
+                .setLinearHeadingInterpolation(closest.getFromHeading(), closest.getToHeading())
+                .build();
 
-        follower.followPath(pedroPathEx.Path14);
+        follower.followPath(newPath);
         waitF();
-        //intake.windup();
-        follower.followPath(pedroPathEx.Path15);
-        waitF();
-        //rotate mag
-        follower.followPath(pedroPathEx.Path16);
-        waitF();
-        //rotate mag
-        follower.followPath(pedroPathEx.Path17);
-        waitF();
-        //intake.winddown();
-
-        // move to shoot
-        follower.followPath(pedroPathEx.Path18);
-        waitF();
-        follower.followPath(pedroPathEx.Path19);
-        waitF();
-
-        //shooterManager.start();
-        //while(shooterManager.isActive());
-        // shooty shooty
     }
 
     @Override
     public void loop() {
 
-        /*if(secondaryMap.startShooting())
-            shooterManager.start();
-        if(secondaryMap.stopShooting())
-            shooterManager.stop();
-        if(secondaryMap.incBall())
-            shooterManager.incCurrSlot();
-        if(secondaryMap.toggleIntake())
-            intake.windup();
-        else
-            intake.winddown();
-
-        if(secondaryMap.setupMag())
-            magazine.setIntake();
-
-
-        shooterManager.update(telemetry);
-        magazine.update(telemetry);
-
-        drive.drive(primaryMap.driveX(), primaryMap.driveY(), primaryMap.rotateX());*/
     }
 }
