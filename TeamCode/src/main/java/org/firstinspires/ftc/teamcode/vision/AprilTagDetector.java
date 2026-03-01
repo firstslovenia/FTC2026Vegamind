@@ -35,7 +35,14 @@ public class AprilTagDetector {
         builder.enableLiveView(true);
 
         visionPortal = builder.build();
+    }
+
+    public void start() {
         visionPortal.setProcessorEnabled(processor, true);
+    }
+
+    public void stop() {
+        visionPortal.setProcessorEnabled(processor, false);
     }
 
     //returns -1 until an april tag is detected,
@@ -50,6 +57,10 @@ public class AprilTagDetector {
         visionPortal.stopStreaming();
         visionPortal.stopLiveView();
 
-        return detections.get(0).id;
+        for(AprilTagDetection detection : detections) {
+           if(detection.id > 20 && detection.id < 24) return detection.id;
+        }
+
+        return -1;
     }
 }
