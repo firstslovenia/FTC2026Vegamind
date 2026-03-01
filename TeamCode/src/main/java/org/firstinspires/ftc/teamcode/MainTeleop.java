@@ -47,7 +47,7 @@ public class MainTeleop extends OpMode {
          //       hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"));
         shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"));
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"));
-        shooterManager = new ShooterManager(magazine, shooter, 23);
+        shooterManager = new ShooterManager(magazine, shooter, 23, 100);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
 
@@ -63,9 +63,9 @@ public class MainTeleop extends OpMode {
     public void loop() {
 
         if(secondaryMap.startShooting())
-            shooterManager.start();
+            shooterManager.startShooting();
         if(secondaryMap.stopShooting())
-            shooterManager.stop();
+            shooterManager.stopShooting();
         if(secondaryMap.incBall())
             shooterManager.incCurrSlot();
         if(secondaryMap.toggleIntake())
@@ -76,9 +76,6 @@ public class MainTeleop extends OpMode {
         if(secondaryMap.setupMag())
             magazine.setIntake();
 
-
-        shooterManager.update(telemetry);
-        magazine.update(telemetry);
 
         drive.drive(primaryMap.driveX(), primaryMap.driveY(), primaryMap.rotateX());
     }

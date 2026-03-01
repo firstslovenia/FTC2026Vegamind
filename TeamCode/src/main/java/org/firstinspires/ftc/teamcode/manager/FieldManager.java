@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.process.Process;
 import org.firstinspires.ftc.teamcode.vision.BallPipeline;
 
 import java.lang.reflect.Field;
@@ -17,7 +18,7 @@ import java.util.List;
 
 import lombok.var;
 
-public class FieldManager {
+public class FieldManager extends Process {
     List<FieldBall> balls = new ArrayList<>();
 
     final int FIELD_SIZE = 366; //cm
@@ -36,7 +37,11 @@ public class FieldManager {
     double focalLengthPx;
     Telemetry telemetry;
 
-    public FieldManager(HardwareMap hardwareMap, WebcamName webcamName, double streamWidth, double streamHeight, double camOffsetX, double camOffsetY, double fov, Telemetry telemetry) {
+    double pitch, camPlaneX, camPlaneY;
+
+    public FieldManager(HardwareMap hardwareMap, WebcamName webcamName, double streamWidth, double streamHeight,
+                        double camOffsetX, double camOffsetY, double fov, long updateInterval, Telemetry telemetry) {
+        super(updateInterval);
         this.camOffsetX = camOffsetX;
         this.camOffsetY = camOffsetY;
         this.streamWidth = streamWidth;
@@ -59,17 +64,30 @@ public class FieldManager {
                 hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName()));
     }
 
-    public void computePositions(double pitch, double camPlaneX, double camPlaneY) {
+    public synchronized void updateCamInfo(double posX, double posY, double pitch) {
+        camPlaneX = posX;
+        camPlaneY = posY;
+        this.pitch = pitch;
+    }
+
+    @Override
+    protected synchronized void update() {
+        List<FieldBall> balls = pipeline.getBallContours();
+    }
+
+    void computePositions(double pitch, double camPlaneX, double camPlaneY) {
         List<FieldBall> balls = pipeline.getBallContours();
         if (balls == null || balls.isEmpty()) { return; }
-        this.telemetry.addData("Ball Count", balls.toArray().length);
+
+        if(telemetry != null)
+            telemetry.addData("Ball Count", balls.toArray().length);
 
         for (FieldBall fieldBall : balls) {
             if (fieldBall == null) { continue; }
 
             // Normalize pixel
-            double Xn = (fieldBall.getX() - this.streamWidth / 2) / this.focalLengthPx;
-            double Yn = (fieldBall.getY() - this.streamHeight / 2) / this.focalLengthPx;
+            double Xn = (fieldBall.getX() - streamWidth / 2) / focalLengthPx;
+            double Yn = (fieldBall.getY() - streamHeight / 2) / focalLengthPx;
 
             // Apply pitch rotation
             double rx = Xn;
@@ -83,10 +101,12 @@ public class FieldManager {
             fieldBall.realX = camPlaneX + t * rx;
             fieldBall.realY = camPlaneY + t * ry;
 
-            // Temporary, write out positions:
-            this.telemetry.addData("Ball X:", fieldBall.realX);
-            this.telemetry.addData("Ball Y:", fieldBall.realY);
-            this.telemetry.update();
+            if(telemetry != null) {
+                // Temporary, write out positions:
+                this.telemetry.addData("Ball X:", fieldBall.realX);
+                this.telemetry.addData("Ball Y:", fieldBall.realY);
+                this.telemetry.update();
+            }
         }
     }
 }

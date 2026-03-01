@@ -25,11 +25,13 @@ public class VisionTeleop extends OpMode {
     public void init() {
         /*pipeline = new BallPipeline(hardwareMap.get(WebcamName.class, "webcam"), 1280, 720,
                 hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName()));*/
-        fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"), 1280, 720, 0, 70, .35, telemetry);
+        fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
+                1280, 720, 0, 70, .35, 200, telemetry);
+        fieldManager.start();
     }
 
     @Override
     public void loop() {
-        fieldManager.computePositions(3.141593 / 4, 0, 0);
+        fieldManager.updateCamInfo(3.141593 / 4, 0, 0);
     }
 }

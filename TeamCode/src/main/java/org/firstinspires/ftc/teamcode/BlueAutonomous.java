@@ -49,7 +49,7 @@ public class BlueAutonomous extends OpMode {
         //       hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"));
         shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"));
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"));
-        shooterManager = new ShooterManager(magazine, shooter, 23);
+        shooterManager = new ShooterManager(magazine, shooter, 23, 100);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
         pedroPathEx = new PedroPathEx(follower);

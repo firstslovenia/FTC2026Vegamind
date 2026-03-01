@@ -4,9 +4,10 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
+import org.firstinspires.ftc.teamcode.process.Process;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 
-public class ShooterManager {
+public class ShooterManager extends Process {
 
     enum State {
         INACTIVE,
@@ -33,7 +34,8 @@ public class ShooterManager {
     final int shootTime = 1500;
     final int windupTime = 3000; // idk smthn
 
-    public ShooterManager(Magazine magazine, BallIO shooter, int tagID) {
+    public ShooterManager(Magazine magazine, BallIO shooter, int tagID, long updateInterval) {
+        super(updateInterval);
         gPos = tagID - 21;
         //https://ftc-resources.firstinspires.org/ftc/game/manual-10 - page 8
 
@@ -49,7 +51,7 @@ public class ShooterManager {
         return currState != State.INACTIVE;
     }
 
-    public boolean start() {
+    public boolean startShooting() {
         if(currState != State.INACTIVE) return false;
 
         currState = State.BALL_SELECT;
@@ -57,7 +59,7 @@ public class ShooterManager {
         return true;
     }
 
-    public void stop() {
+    public void stopShooting() {
         currState = State.WINDDOWN;
     }
 
@@ -117,13 +119,14 @@ public class ShooterManager {
         currState = State.INACTIVE;
     }
 
-    public void update(Telemetry telemetry) {
-        if(telemetry != null) {
+    @Override
+    public synchronized void update() {
+        /*if(telemetry != null) {
             telemetry.addData("shootmanager ballindex: ", currSlot);
             telemetry.addData("shootmanager shots: ", shotsLeft);
             telemetry.addData("shootmanager state: ", currState);
             //telemetry.addData("shootmanager shotsleft: ", currSt);
-        }
+        }*/
 
         switch(currState) {
             case BALL_SELECT:

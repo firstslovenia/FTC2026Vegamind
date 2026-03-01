@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.magazine;
 
+import android.database.CrossProcessCursorWrapper;
+
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -11,8 +13,11 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.pid.MiniPID;
+import org.firstinspires.ftc.teamcode.process.Process;
 
-public class Magazine {
+import lombok.Getter;
+
+public class Magazine extends Process {
     DcMotor magazineMotor;
 
     Servo helpServo;
@@ -52,12 +57,14 @@ public class Magazine {
 
     double[] motorPositions = {0.0, 2780, -2530, 4096, -1220, 1380};
 
+    @Getter
     State state = State.IDLE;
 
     MiniPID pid;
 
     public Magazine(DcMotor magazineMotor, Servo helpServo, TouchSensor intakeSensor, TouchSensor outtakeSensor,
-                    ColorSensor colorSensor, DistanceSensor distanceSensor) {
+                    ColorSensor colorSensor, DistanceSensor distanceSensor, long updateInterval) {
+        super(updateInterval);
         this.magazineMotor = magazineMotor;
         this.helpServo = helpServo;
         this.intakeSensor = intakeSensor;
@@ -99,7 +106,7 @@ public class Magazine {
         return false;
     }
 
-    public boolean rotateToBall(int index) {
+    public synchronized boolean rotateToBall(int index) {
         //if(state != State.IDLE) return false;
 
       //  if(helpServo.getPosition() == 0) {
@@ -128,8 +135,9 @@ public class Magazine {
         return true;
     }
 
-    public void update(Telemetry telemetry) {
-        if(telemetry != null) {
+    @Override
+    public synchronized void update() {
+        /*if(telemetry != null) {
             telemetry.addData("curr mag pos:", magazineMotor.getCurrentPosition());
             telemetry.addData("target mag pos:", motorPositions[currIndex]);
             telemetry.addData("target outtake:", isOuttakeTarget);
@@ -138,7 +146,7 @@ public class Magazine {
             telemetry.addData("mag slot 1:", slotColors[0]);
             telemetry.addData("mag slot 2:", slotColors[1]);
             telemetry.addData("mag slot 3:", slotColors[2]);
-        }
+        }*/
 
         switch(state) {
             case IDLE:
@@ -211,10 +219,6 @@ public class Magazine {
         state = State.DEPOSIT;
         helpServo.setPosition(1.0);
         servoCycleTimer.reset();
-    }
-
-    public State getState() {
-        return state;
     }
 
     public Color getBallAtSlot(int index) {
