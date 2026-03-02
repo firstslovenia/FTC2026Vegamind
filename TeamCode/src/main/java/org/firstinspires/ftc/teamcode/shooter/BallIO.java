@@ -9,14 +9,14 @@ public class BallIO {
     public BallIO(DcMotor shooter) {
         this.shooter = shooter;
 
-        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
        shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
        shooter.setDirection(DcMotorSimple.Direction.FORWARD);
     }
 
     public void windup() {
-        shooter.setPower(0.3f);
+        shooter.setPower(1);
     }
 
     public boolean isWound() {

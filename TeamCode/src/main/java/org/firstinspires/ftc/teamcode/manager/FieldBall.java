@@ -14,6 +14,14 @@ public class FieldBall {
         this.color = BallColor.NONE;
     }
 
+    public FieldBall(double x, double y, double realX, double realY) {
+        this.x = x;
+        this.y = y;
+        this.realX = realX;
+        this.realY = realY;
+        this.color = BallColor.NONE;
+    }
+
     public FieldBall(double x, double y, BallColor color) {
         this.x = x;
         this.y = y;

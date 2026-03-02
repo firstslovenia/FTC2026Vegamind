@@ -15,7 +15,7 @@ public class Magazine extends Process {
 
     Servo helpServo;
     ElapsedTime servoCycleTimer;
-    double servoCycleTime = 1.5f; //adjust, just to be safe for now
+    double servoCycleTime = 1500; //adjust, just to be safe for now
 
     TouchSensor intakeSensor;
     TouchSensor outtakeSensor;
@@ -66,7 +66,7 @@ public class Magazine extends Process {
 
         servoCycleTimer = new ElapsedTime();
 
-        pid = new MiniPID(0.00025, 0.000025, 0.00035);
+        pid = new MiniPID(0.00025, 0.00003, 0.0030);
     }
 
     double round(double x, int decimals) {
@@ -144,7 +144,7 @@ public class Magazine extends Process {
             case IDLE:
                 break;
             case ROTATE:
-                if(approxEq(pos, motorPositions[currIndex], 20) && p < 0.1) {
+                if(approxEq(pos, motorPositions[currIndex], 20) && p < 0.025) {
                     magState = State.DEPOSIT;
                 }
 

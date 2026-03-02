@@ -10,9 +10,13 @@ import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 
+import org.apache.commons.math3.Field;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.auto.Constants;
+import org.firstinspires.ftc.teamcode.color.BallColor;
 import org.firstinspires.ftc.teamcode.drive.Drive;
 import org.firstinspires.ftc.teamcode.input.PrimaryMap;
 import org.firstinspires.ftc.teamcode.input.SecondaryMap;
@@ -24,6 +28,8 @@ import org.firstinspires.ftc.teamcode.manager.ShooterManager;
 import org.firstinspires.ftc.teamcode.pathing.PedroPathBlue;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 import org.firstinspires.ftc.teamcode.util.MapPoint;
+
+import java.util.ArrayList;
 
 @Autonomous(name="Blue Autonomous", group="FTC 26")
 public class BlueAutonomous extends OpMode {
@@ -51,8 +57,8 @@ public class BlueAutonomous extends OpMode {
 
         primaryMap = new PrimaryMap(gamepad1);
         secondaryMap = new SecondaryMap(gamepad2);
-        // magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
-        //       hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"));
+        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
+                hardwareMap.get(TouchSensor.class, "outtakeSensor"), 50);
         shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"));
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"));
         shooterManager = new ShooterManager(magazine, shooter, 23, 100);
@@ -65,6 +71,8 @@ public class BlueAutonomous extends OpMode {
         fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
                 1280, 720, 0, 70, .35, 200, telemetry);
         fieldManager.start();
+        magazine.start();
+        shooterManager.start();
     }
 
     void waitF() {
@@ -97,13 +105,24 @@ public class BlueAutonomous extends OpMode {
         return new MapPoint(toX, toY, follower.getHeading(), follower.getHeading() + 90); // Heading is in radians
     }
 
+    void pickupArtifacts(PathChain path) {
+        intake.windup();
+        magazine.rotateToBall(1);
+        follower.followPath(path);
+        waitF();
+
+        intake.winddown();
+    }
+
     @Override
     public void start() {
         // TODO: Go to Shooting path first for preload; I'm skipping since I just want to scout balls right now
         follower.followPath(pedroPathBlue.PathScout1);
         waitF();
 
-        FieldStruct struct = fieldManager.computePositions(3.141593/4, 0, 0); // Some random value for the pitch
+        ArrayList<FieldBall> a = new ArrayList<>();
+        a.add(new FieldBall(0, 0, 30, 20));
+        FieldStruct struct = new FieldStruct(a, BallColor.GREEN);//fieldManager.computePositions(3.141593/4, 0, 0); // Some random value for the pitch
         MapPoint closest = mapToField(closestToOrigin(struct)); // Unless something goes really wrong, this should always be on our side
         PathChain newPath = follower.pathBuilder()
                 .addPath(
@@ -115,12 +134,10 @@ public class BlueAutonomous extends OpMode {
                 .setLinearHeadingInterpolation(closest.getFromHeading(), closest.getToHeading())
                 .build();
 
-        follower.followPath(newPath);
-        waitF();
+        pickupArtifacts(newPath);
     }
 
     @Override
     public void loop() {
-
     }
 }
