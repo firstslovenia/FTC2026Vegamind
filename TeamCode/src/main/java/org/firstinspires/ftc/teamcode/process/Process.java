@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.process;
 
-public abstract class Process implements Runnable {
+public abstract class Process extends Thread {
     Thread thread;
 
     long lastUpdate;
@@ -13,21 +13,8 @@ public abstract class Process implements Runnable {
         this.updateInterval = updateInterval;
     }
 
-    public void start() {
-        shouldRun = true;
-        thread = new Thread(this);
-    }
-
-    public void stop() {
-        shouldRun = false;
-        try {
-            thread.join();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public synchronized void run() {
+    @Override
+    public void run() {
         while(shouldRun) {
             long waitTime = updateInterval - (System.currentTimeMillis() - lastUpdate);
             if(waitTime > 0) {

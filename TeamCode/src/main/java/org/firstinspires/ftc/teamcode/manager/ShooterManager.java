@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.manager;
 
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
 import org.firstinspires.ftc.teamcode.process.Process;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
@@ -72,7 +71,7 @@ public class ShooterManager extends Process {
     }
 
     void ballSelectState() {
-        if(magazine.getState() == Magazine.State.DEPOSIT) return; // wait
+        if(magazine.getMagState() == Magazine.State.DEPOSIT) return; // wait
 
         Magazine.Color color = currSlot % 3 == gPos ? Magazine.Color.GREEN : Magazine.Color.PURPLE;
         if(magazine.setOuttake(color)) {
@@ -97,7 +96,7 @@ public class ShooterManager extends Process {
     }
 
     void shootState() {
-        if(magazine.getState() != Magazine.State.IDLE) return;
+        if(magazine.getMagState() != Magazine.State.IDLE) return;
         magazine.depositBall();
 
         currSlot = ++currSlot % 3;

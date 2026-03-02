@@ -28,7 +28,8 @@ public class TestTeleop extends OpMode {
 //        distance = hardwareMap.get(DistanceSensor.class, "distance");
 //
         magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
-                hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"), 50);
+                hardwareMap.get(TouchSensor.class, "outtakeSensor"), 50);
+        magazine.start();
     }
 
     @Override
@@ -55,12 +56,9 @@ public class TestTeleop extends OpMode {
         }
         else if(gamepad1.cross) {
             magazine.rotateToBall(4);
-        } else {
-            hardwareMap.get(DcMotor.class, "magazine").setPower(0.0);
         }
 
-
-        //telemetry.update();
+        telemetry.update();
 
     }
 }

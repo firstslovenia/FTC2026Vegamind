@@ -1,17 +1,10 @@
 package org.firstinspires.ftc.teamcode.magazine;
 
-import android.database.CrossProcessCursorWrapper;
-
-import com.qualcomm.robotcore.hardware.AnalogInput;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.pid.MiniPID;
 import org.firstinspires.ftc.teamcode.process.Process;
 
@@ -26,9 +19,6 @@ public class Magazine extends Process {
 
     TouchSensor intakeSensor;
     TouchSensor outtakeSensor;
-
-    ColorSensor colorSensor;
-    DistanceSensor distanceSensor;
 
     int currIndex = 0;
     int outtakePosOffset = -30;
@@ -58,19 +48,17 @@ public class Magazine extends Process {
     double[] motorPositions = {0.0, 2780, -2530, 4096, -1220, 1380};
 
     @Getter
-    State state = State.IDLE;
+    State magState = State.IDLE;
 
     MiniPID pid;
 
     public Magazine(DcMotor magazineMotor, Servo helpServo, TouchSensor intakeSensor, TouchSensor outtakeSensor,
-                    ColorSensor colorSensor, DistanceSensor distanceSensor, long updateInterval) {
+                     long updateInterval) {
         super(updateInterval);
         this.magazineMotor = magazineMotor;
         this.helpServo = helpServo;
         this.intakeSensor = intakeSensor;
         this.outtakeSensor = outtakeSensor;
-        this.colorSensor = colorSensor;
-        this.distanceSensor = distanceSensor;
 
         magazineMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
@@ -78,7 +66,7 @@ public class Magazine extends Process {
 
         servoCycleTimer = new ElapsedTime();
 
-        pid = new MiniPID(0.00020, 0.00010, 0.00015);
+        pid = new MiniPID(0.00025, 0.000025, 0.00035);
     }
 
     double round(double x, int decimals) {
@@ -130,7 +118,8 @@ public class Magazine extends Process {
         magazineMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
        // magazineMotor.setPower(1.0f * dir);
 
-        state = State.ROTATE;
+        magState = State.ROTATE;
+        pid.reset();
 
         return true;
     }
@@ -147,19 +136,16 @@ public class Magazine extends Process {
             telemetry.addData("mag slot 2:", slotColors[1]);
             telemetry.addData("mag slot 3:", slotColors[2]);
         }*/
+        double pos = -magazineMotor.getCurrentPosition();
+        double p = pid.getOutput(pos, motorPositions[currIndex]);
+        magazineMotor.setPower(p);
 
-        switch(state) {
+        switch(magState) {
             case IDLE:
                 break;
             case ROTATE:
-                double pos = -magazineMotor.getCurrentPosition();
-                double p = pid.getOutput(pos, motorPositions[currIndex]);
-                magazineMotor.setPower(p);
-
                 if(approxEq(pos, motorPositions[currIndex], 20) && p < 0.1) {
-                    state = State.DEPOSIT;
-                    magazineMotor.setPower(0.0);
-                    pid.reset();
+                    magState = State.DEPOSIT;
                 }
 
                 break;
@@ -172,7 +158,7 @@ public class Magazine extends Process {
                     break;
                 } else {
                     helpServo.setPosition(1);
-                    state = State.IDLE;
+                    magState = State.IDLE;
                 }
         }
         updateColorData();
@@ -180,12 +166,6 @@ public class Magazine extends Process {
     }
 
     void updateColorData() {
-        if(isOuttakeTarget || distanceSensor.getDistance(DistanceUnit.MM) > 30) return; // clearly just black
-
-        if(colorSensor.green() > colorSensor.blue()) // stupid but works "well enough' i think probably
-            slotColors[currIndex] = Color.GREEN;
-        else
-            slotColors[currIndex] = Color.PURPLE;
     }
 
     int findSlotWithColor(Color color) {
@@ -213,10 +193,10 @@ public class Magazine extends Process {
     }
 
     public void depositBall() {
-        if(state != State.IDLE) throw new RuntimeException();
+        if(magState != State.IDLE) throw new RuntimeException();
 
         //TESTING slotColors[currIndex] = Color.NONE;
-        state = State.DEPOSIT;
+        magState = State.DEPOSIT;
         helpServo.setPosition(1.0);
         servoCycleTimer.reset();
     }
