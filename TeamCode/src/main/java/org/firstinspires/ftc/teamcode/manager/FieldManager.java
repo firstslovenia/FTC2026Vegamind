@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 
+import lombok.Getter;
 import lombok.var;
 
 public class FieldManager extends Process {
@@ -61,6 +62,8 @@ public class FieldManager extends Process {
         }
     }
 
+    public synchronized List<List<List<FieldBall>>> getFieldGrid() { return fieldGrid; }
+    public synchronized List<FieldBall> getFieldBalls() { return fieldBalls; }
 
     void initField() {
         fieldGrid = new ArrayList<>();
@@ -88,8 +91,11 @@ public class FieldManager extends Process {
         telemetry.addData("size", balls.size());
 
         for(FieldBall ball : balls) {
+            if (ball.getY() < 400) { continue; } // TODO: Some constant idk; Calibrate
             computePositions(ball);
         }
+        fieldBalls.clear();
+        fieldBalls = balls;
     }
 
     void clearFieldArea(BallColor color) {
@@ -135,13 +141,13 @@ public class FieldManager extends Process {
         fieldBall.realX = camPlaneX + t * rx;
         fieldBall.realY = camPlaneY + t * rz;
 
-       /* if(fieldBall.realY / BALL_SIZE > 0 && fieldBall.realY / BALL_SIZE < GRID_SIZE &&
+       if(fieldBall.realY / BALL_SIZE > 0 && fieldBall.realY / BALL_SIZE < GRID_SIZE &&
         fieldBall.realX / BALL_SIZE > 0 && fieldBall.realX / BALL_SIZE < GRID_SIZE)  {
             fieldGrid
                     .get((int)Math.floor(fieldBall.realY / BALL_SIZE))
                     .get((int)Math.floor(fieldBall.realX / BALL_SIZE))
                     .add(fieldBall);
-        }*/
+        }
 
         if(telemetry != null) {
             // Temporary, write out positions:

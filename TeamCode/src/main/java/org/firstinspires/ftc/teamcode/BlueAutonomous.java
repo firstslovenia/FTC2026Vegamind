@@ -31,6 +31,7 @@ import org.firstinspires.ftc.teamcode.shooter.BallIO;
 import org.firstinspires.ftc.teamcode.util.MapPoint;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Autonomous(name="Blue Autonomous", group="FTC 26")
 public class BlueAutonomous extends OpMode {
@@ -46,6 +47,7 @@ public class BlueAutonomous extends OpMode {
     Follower follower;
     PedroPathBlue pedroPathBlue;
     FieldManager fieldManager;
+    Servo camSwivel;
 
 
     double targetHeading = 0;
@@ -58,15 +60,16 @@ public class BlueAutonomous extends OpMode {
 
         primaryMap = new PrimaryMap(gamepad1);
         secondaryMap = new SecondaryMap(gamepad2);
-        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
-                hardwareMap.get(TouchSensor.class, "outtakeSensor"), 50);
+        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), null,
+                null, 50);
         shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.REVERSE, 1.0);
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.4);
         shooterManager = new ShooterManager(magazine, shooter, 23, 100);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
         pedroPathBlue = new PedroPathBlue(follower);
-
+        camSwivel =  hardwareMap.get(Servo.class, "camSwivel");
+        camSwivel.setPosition(0.0);
         follower.setPose(new Pose(34.25, 135.75));
 
         fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
@@ -82,17 +85,17 @@ public class BlueAutonomous extends OpMode {
         }
     }
 
-    FieldBall closestToOrigin(FieldStruct struct) {
-        if (struct == null || struct.getBalls() == null) { return null; }
+    FieldBall closestToOrigin(List<FieldBall> struct) {
+        if (struct == null || struct.isEmpty()) { return null; }
 
-        FieldBall closest = struct.getBalls().get(0);
+        FieldBall closest = struct.get(0);
+
         double minDistanceSquared = Math.pow(closest.getRealX(), 2) + Math.pow(closest.getRealY(), 2);
-
-        for (int i = 1; i < struct.getBalls().toArray().length; i++) {
-            double distanceSquared = Math.pow(struct.getBalls().get(i).getRealX(), 2) + Math.pow(struct.getBalls().get(i).getRealY(), 2);
-            if (distanceSquared < minDistanceSquared) {
-                minDistanceSquared = distanceSquared;
-                closest = struct.getBalls().get(i);
+        for (FieldBall ball : struct) {
+            double distSqrd = Math.pow(ball.getRealX(), 2) + Math.pow(ball.getRealY(), 2);
+            if (distSqrd < minDistanceSquared) {
+                minDistanceSquared = distSqrd;
+                closest = ball;
             }
         }
 
@@ -100,8 +103,8 @@ public class BlueAutonomous extends OpMode {
     }
 
     MapPoint mapToField(FieldBall target) {
-        double toX = follower.getPose().getX() + target.getRealX();
-        double toY = follower.getPose().getY() + target.getRealY();
+        double toX = follower.getPose().getX() + Math.abs(target.getRealY());
+        double toY = follower.getPose().getY() - Math.abs(target.getRealX());
 
         return new MapPoint(toX, toY, follower.getHeading(), follower.getHeading() + 90); // Heading is in radians
     }
@@ -117,18 +120,27 @@ public class BlueAutonomous extends OpMode {
 
     @Override
     public void start() {
+        camSwivel.setPosition(0.4);
+        fieldManager.updateCamInfo(0, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
+
         // TODO: Go to Shooting path first for preload; I'm skipping since I just want to scout balls right now
-        PathChain scout1 = follower.pathBuilder().addPath(new BezierLine(
+        /*PathChain scout1 = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
                 new Pose(pedroPathBlue.scout1X, pedroPathBlue.scout1Y)
         )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.scout1Deg).build();
         follower.followPath(scout1);
-        waitF();
+        waitF();*/
 
-        ArrayList<FieldBall> a = new ArrayList<>();
-        a.add(new FieldBall(0, 0, 30, 20));
-        FieldStruct struct = new FieldStruct(a, BallColor.GREEN);//fieldManager.computePositions(3.141593/4, 0, 0); // Some random value for the pitch
-        MapPoint closest = mapToField(closestToOrigin(struct)); // Unless something goes really wrong, this should always be on our side
+        //ArrayList<FieldBall> a = new ArrayList<>();
+        //a.add(new FieldBall(0, 0, 30, 20));
+        //FieldStruct struct = new FieldStruct(a, BallColor.GREEN);
+        // Some random value for the pitch
+        BallColor color;
+        List<FieldBall> balls = fieldManager.getFieldBalls();
+        do {
+            balls = fieldManager.getFieldBalls();
+        } while (balls.isEmpty() || balls.get(0).getColor() == BallColor.GREEN);
+        MapPoint closest = mapToField(closestToOrigin(balls)); // Unless something goes really wrong, this should always be on our side
         PathChain newPath = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
@@ -138,12 +150,33 @@ public class BlueAutonomous extends OpMode {
                 )
                 .setLinearHeadingInterpolation(closest.getFromHeading(), closest.getToHeading() + Math.toRadians(90)) // Rotate towards balls
                 .build();
+        follower.followPath(newPath);
+        waitF();
 
-        pickupArtifacts(newPath);
+        /*pickupArtifacts(newPath);
 
         // Eat the balls
         // Move to scout 2
+        PathChain scout2 = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathBlue.scout2X, pedroPathBlue.scout2Y)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.scout2Deg).build(); // Heading might be fucked
+        follower.followPath(scout2);
+        waitF();
 
+        // TODO: Implement the scouting routine here as I am not just gonna copy the array list again :angry:
+        // TODO: Pickup artifacts
+
+        // Eat the balls (Pt. 2)
+        PathChain scout3 = follower.pathBuilder().addPath(new BezierLine(
+                        new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                        new Pose(pedroPathBlue.scout3X, pedroPathBlue.scout3Y)
+                )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.scout3Deg).build(); // Heading might be fucked
+                follower.followPath(scout3);
+                waitF();
+
+        // TODO: Implement the scouting routine here as I am not just gonna copy the array list again :angry:
+        // TODO: Pickup artifacts*/
     }
 
     @Override
