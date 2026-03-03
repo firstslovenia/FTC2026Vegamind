@@ -9,9 +9,25 @@ import com.pedropathing.paths.PathChain;
 public class PedroPathBlue {
     public PathChain PathShoot;
     public PathChain PathScout1;
+    public PathChain PathScout2;
+    public PathChain PathScout3;
+
+    public double shootX, scout1X, scout2X, scout3X;
+    public double shootY, scout1Y, scout2Y, scout3Y;
+    public double shootDeg, scout1Deg, scout2Deg, scout3Deg;
 
     public PedroPathBlue(Follower follower) {
-        PathShoot = follower.pathBuilder()
+        shootX = 57.5; shootY = 110.250;
+        scout1X = 57.5; scout1Y = 103.750;
+        scout2X = 57.5; scout2Y = 80.0;
+        scout3X = 57.5; scout3Y = 50.0;
+
+        shootDeg = Math.toRadians(145);
+        scout1Deg = Math.toRadians(90);
+        scout2Deg = Math.toRadians(90);
+        scout3Deg = Math.toRadians(90);
+
+        /*PathShoot = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
                                 new Pose(34.250, 135.750),
@@ -29,5 +45,23 @@ public class PedroPathBlue {
           )
           .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(90))
           .build();
+        PathScout2 = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(57.500, 103.750),
+                                new Pose(57.5, 80.0)
+                        )
+                )
+                .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(90))
+                .build();
+        PathScout3 = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(57.500, 110.250),
+                                new Pose(57.500, 103.750)
+                        )
+                )
+                .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(90))
+                .build();*/
     }
 }

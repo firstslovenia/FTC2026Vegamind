@@ -118,7 +118,11 @@ public class BlueAutonomous extends OpMode {
     @Override
     public void start() {
         // TODO: Go to Shooting path first for preload; I'm skipping since I just want to scout balls right now
-        follower.followPath(pedroPathBlue.PathScout1);
+        PathChain scout1 = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathBlue.scout1X, pedroPathBlue.scout1Y)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.scout1Deg).build();
+        follower.followPath(scout1);
         waitF();
 
         ArrayList<FieldBall> a = new ArrayList<>();
@@ -129,13 +133,17 @@ public class BlueAutonomous extends OpMode {
                 .addPath(
                         new BezierLine(
                                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                                new Pose(closest.getX(), closest.getY()) // TODO: This will b-line for the ball currently; move only one coordinate at a time to get more perpendicular movement
+                                new Pose(follower.getPose().getX(), closest.getY())
                         )
                 )
-                .setLinearHeadingInterpolation(closest.getFromHeading(), closest.getToHeading())
+                .setLinearHeadingInterpolation(closest.getFromHeading(), closest.getToHeading() + Math.toRadians(90)) // Rotate towards balls
                 .build();
 
         pickupArtifacts(newPath);
+
+        // Eat the balls
+        // Move to scout 2
+
     }
 
     @Override
