@@ -5,18 +5,21 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 public class BallIO {
     private DcMotor shooter;
+    double maxF = 0.0;
 
-    public BallIO(DcMotor shooter) {
+    public BallIO(DcMotor shooter, DcMotorSimple.Direction dir, double maxF) {
         this.shooter = shooter;
+        this.maxF = maxF;
 
         shooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
+        shooter.setPower(0.0);
        shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-       shooter.setDirection(DcMotorSimple.Direction.FORWARD);
+       shooter.setDirection(dir);
     }
 
     public void windup() {
-        shooter.setPower(1);
+        shooter.setPower(maxF);
     }
 
     public boolean isWound() {

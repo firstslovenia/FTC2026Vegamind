@@ -1,61 +1,45 @@
 package org.firstinspires.ftc.teamcode.manager;
 
-import com.qualcomm.robotcore.util.ElapsedTime;
-
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
 import org.firstinspires.ftc.teamcode.process.Process;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 
-public class ShooterManager extends Process {
+public class IntakeManager extends Process {
 
     enum State {
         INACTIVE,
         BALL_SELECT,
-        WINDUP,
-        SHOOT,
+        INTAKE,
         WINDDOWN,
     }
-    int gPos;
     int currSlot = 0;
 
     Magazine magazine;
-    BallIO shooter;
+    BallIO intake;
 
-    boolean isWindingUp = false;
-    int shotsLeft = 0;
-
+    int intakesLeft = 0;
 
     State currState = State.INACTIVE;
 
-    ElapsedTime shotTimer = new ElapsedTime();
-    ElapsedTime windupTimer = new ElapsedTime();
 
-    final int shootTime = 1500;
-    final int windupTime = 3000; // idk smthn
-
-    public ShooterManager(Magazine magazine, BallIO shooter, int tagID, long updateInterval) {
+    public IntakeManager(Magazine magazine, BallIO shooter, long updateInterval) {
         super(updateInterval);
-        gPos = tagID - 21;
         //https://ftc-resources.firstinspires.org/ftc/game/manual-10 - page 8
 
         this.magazine = magazine;
-        this.shooter = shooter;
+        this.intake = shooter;
         currState = State.INACTIVE;
-    }
-
-    public int getWindupTime() {
-        return windupTime;
     }
 
     public boolean isActive() {
         return currState != State.INACTIVE;
     }
 
-    public boolean startShooting() {
+    public boolean startIntaking() {
         if(currState != State.INACTIVE) return false;
 
         currState = State.BALL_SELECT;
-        shotsLeft=3;
+        intakesLeft = 3;
         return true;
     }
 
@@ -64,18 +48,19 @@ public class ShooterManager extends Process {
     }
 
     public boolean shoot(int shotCount) {
-        if(currState.ordinal() != State.SHOOT.ordinal() - 1) return false;
+        if(currState.ordinal() != State.INTAKE.ordinal() - 1) return false;
 
-        currState = State.SHOOT;
-        shotsLeft = shotCount;
+        currState = State.INTAKE;
+        intakesLeft = shotCount;
         return true;
     }
 
     void ballSelectState() {
         if(magazine.getMagState() != Magazine.State.IDLE) return; // wait
 
-        magazine.rotateToBall(currSlot);
-        currState = State.WINDUP;
+        magazine.rotateToBall(currSlot + 3);
+        currState = State.INTAKE;
+        intake.windup();
 
         return;
        /*
@@ -94,32 +79,23 @@ public class ShooterManager extends Process {
         //if(!ret) stop(); // no more balls :(*/
     }
 
-    void windupState() {
-        if (shotsLeft > 0) currState = State.SHOOT;
-        else currState = State.WINDDOWN;
-        shooter.windup();
-        windupTimer.startTime();
-    }
-
-    void shootState() {
+    void intakeState() {
         if(magazine.getMagState() != Magazine.State.IDLE) return;
-        magazine.depositBall();
 
         currSlot = ++currSlot % 3;
-        shotsLeft--;
-        if(shotsLeft > 0) {
+        intakesLeft--;
+        if(intakesLeft > 0) {
             currState = State.BALL_SELECT;
             return;
         }
 
         currState = State.WINDDOWN;
-        shotTimer.startTime();
     }
 
     void windDownState() {
         if(magazine.getMagState() != Magazine.State.IDLE) return;
 
-        shooter.winddown();
+        intake.winddown();
 
         currState = State.INACTIVE;
     }
@@ -137,11 +113,8 @@ public class ShooterManager extends Process {
             case BALL_SELECT:
                 ballSelectState();
                 break;
-            case WINDUP:
-                windupState();
-                break;
-            case SHOOT:
-                shootState();
+            case INTAKE:
+                intakeState();
                 break;
             case WINDDOWN:
                 windDownState();

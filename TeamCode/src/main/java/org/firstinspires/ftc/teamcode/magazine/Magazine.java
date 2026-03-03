@@ -15,12 +15,12 @@ public class Magazine extends Process {
 
     Servo helpServo;
     ElapsedTime servoCycleTimer;
-    double servoCycleTime = 1500; //adjust, just to be safe for now
+    double servoCycleTime = 300; //adjust, just to be safe for now
 
     TouchSensor intakeSensor;
     TouchSensor outtakeSensor;
 
-    int currIndex = 0;
+    int currIndex = -1;
     int outtakePosOffset = -30;
 
     boolean isOuttakeTarget = false;
@@ -30,6 +30,8 @@ public class Magazine extends Process {
     double margin = 50; // set
     double adjustPower = 0.2; //set
     int dir = 0;
+
+    double lastEncoderPos = 0;
 
     public enum State {
         IDLE,
@@ -45,7 +47,7 @@ public class Magazine extends Process {
 
     Color[] slotColors = {Color.GREEN, Color.GREEN, Color.PURPLE};
 
-    double[] motorPositions = {0.0, 2780, -2530, 4096, -1220, 1380};
+    double[] motorPositions = {0.0, 2730, 5460, 4096, -1365, 1365};
 
     @Getter
     State magState = State.IDLE;
@@ -60,13 +62,17 @@ public class Magazine extends Process {
         this.intakeSensor = intakeSensor;
         this.outtakeSensor = outtakeSensor;
 
+        magazineMotor.setPower(0.0);
         magazineMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         slotColors = new Color[]{Color.PURPLE, Color.GREEN, Color.GREEN};
 
         servoCycleTimer = new ElapsedTime();
 
-        pid = new MiniPID(0.00025, 0.00003, 0.0030);
+        pid = new MiniPID(0.0003, 0.00002, 0.00125);
+        magState = State.IDLE;
+        currIndex = 0;
+        helpServo.setPosition(1.0);
     }
 
     double round(double x, int decimals) {
@@ -137,32 +143,44 @@ public class Magazine extends Process {
             telemetry.addData("mag slot 3:", slotColors[2]);
         }*/
         double pos = -magazineMotor.getCurrentPosition();
-        double p = pid.getOutput(pos, motorPositions[currIndex]);
-        magazineMotor.setPower(p);
+        if(currIndex != -1) {
+            double p = pid.getOutput(pos, motorPositions[currIndex]);
+            magazineMotor.setPower(p);
+        }
 
         switch(magState) {
             case IDLE:
                 break;
             case ROTATE:
-                if(approxEq(pos, motorPositions[currIndex], 20) && p < 0.025) {
-                    magState = State.DEPOSIT;
+                if(approxEq(pos, motorPositions[currIndex], 70) && approxEq(lastEncoderPos, pos, 15)) {
+                    //magState = State.DEPOSIT;
+                    magState = State.IDLE;
                 }
 
                 break;
             case DEPOSIT:
-                if(servoCycleTimer.milliseconds() < servoCycleTime) break;
-
-                if(helpServo.getPosition() == 1) {
-                    helpServo.setPosition(0);
-                    servoCycleTimer.reset();
-                    break;
-                } else {
-                    helpServo.setPosition(1);
+                if(currIndex >= 3) {
                     magState = State.IDLE;
+                    break;
                 }
+                magazineMotor.setPower(0.0f);
+                helpServo.setPosition(0.4);
+                try {
+                    Thread.sleep((long)servoCycleTime); // abs waiting time where NOTHING SHOULD HAPPEN
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                helpServo.setPosition(1.0);
+                try {
+                    Thread.sleep((long)servoCycleTime); // abs waiting time where NOTHING SHOULD HAPPEN
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                magState = State.IDLE;
         }
         updateColorData();
 
+        lastEncoderPos = pos;
     }
 
     void updateColorData() {
@@ -197,8 +215,6 @@ public class Magazine extends Process {
 
         //TESTING slotColors[currIndex] = Color.NONE;
         magState = State.DEPOSIT;
-        helpServo.setPosition(1.0);
-        servoCycleTimer.reset();
     }
 
     public Color getBallAtSlot(int index) {

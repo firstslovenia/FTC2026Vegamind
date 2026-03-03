@@ -5,13 +5,16 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
 
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
+import org.firstinspires.ftc.teamcode.manager.IntakeManager;
+import org.firstinspires.ftc.teamcode.manager.ShooterManager;
+import org.firstinspires.ftc.teamcode.shooter.BallIO;
 
 @TeleOp(name = "MagTest", group = "FTC 26")
 public class TestTeleop extends OpMode {
@@ -21,6 +24,10 @@ public class TestTeleop extends OpMode {
     DistanceSensor distance;
     Magazine magazine;
     AnalogInput pot;
+    ShooterManager shooterManager;
+    IntakeManager intakeManager;
+    BallIO shooter;
+    BallIO intake;
     @Override
     public void init() {
 //        color = hardwareMap.get(ColorSensor.class, "colorAlt");
@@ -30,6 +37,15 @@ public class TestTeleop extends OpMode {
         magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
                 hardwareMap.get(TouchSensor.class, "outtakeSensor"), 50);
         magazine.start();
+
+        shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.REVERSE, 1.0);
+        intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.4);
+        shooterManager = new ShooterManager(magazine, shooter, 23, 100);
+        intakeManager = new IntakeManager(magazine, intake, 100);
+
+
+        shooterManager.start();
+        intakeManager.start();
     }
 
     @Override
@@ -57,6 +73,12 @@ public class TestTeleop extends OpMode {
         else if(gamepad1.cross) {
             magazine.rotateToBall(4);
         }
+
+        if(gamepad1.dpad_up) {
+            shooterManager.startShooting();
+        }
+        if(gamepad1.dpad_down)
+            intakeManager.startIntaking();
 
         telemetry.update();
 

@@ -29,11 +29,13 @@ public class BallPipeline extends OpenCvPipeline {
     Mat hierarchy = new Mat(); // TOOD can this be null?
 
     final List<MatOfPoint> contours = new ArrayList<>();
+    final List<FieldBall> fieldBalls = new ArrayList<>();
     boolean updatedContours = false;
 
     BallColor currentColor = BallColor.GREEN;
 
     int streamWidth, streamHeight;
+
 
     public BallPipeline(WebcamName webcam, int streamWidth, int streamHeight, int viewID) {
         this.streamWidth = streamWidth;
@@ -54,7 +56,7 @@ public class BallPipeline extends OpenCvPipeline {
             public void onOpened() {
                 cam.setPipeline(pipeline);
                 cam.showFpsMeterOnViewport(true);
-                cam.startStreaming(streamWidth, streamHeight, OpenCvCameraRotation.UPRIGHT);
+                cam.startStreaming(streamWidth, streamHeight, OpenCvCameraRotation.UPSIDE_DOWN);
             }
 
             @Override
@@ -85,7 +87,7 @@ public class BallPipeline extends OpenCvPipeline {
     void filterContours(List<MatOfPoint> contours) {
         for(int i = 0; i < contours.size(); i++) {
             double area = Imgproc.contourArea(contours.get(i));
-            if(area > 500) { // no balls :(
+            if(area > 4000) { // no balls :(
                 continue;
             }
 
@@ -94,25 +96,21 @@ public class BallPipeline extends OpenCvPipeline {
         }
     }
 
-    List<FieldBall> contour2Ball() {
-        List<FieldBall> balls = new ArrayList<>();
-        synchronized (contours) {
-            for(MatOfPoint contour : contours) {
-                Rect rect = Imgproc.boundingRect(contour);
-                balls.add(
-                        new FieldBall(rect.x, rect.y, getLastUpdateColor())
-                );
-            }
+    synchronized void contour2Ball() {
+        fieldBalls.clear();
+        for(MatOfPoint contour : contours) {
+            Rect rect = Imgproc.boundingRect(contour);
+            fieldBalls.add(
+                    new FieldBall(rect.x + rect.width / 2, rect.y + rect.height / 2, getLastUpdateColor())
+            );
         }
-
-        return balls;
     }
 
-    public List<FieldBall> getBallContours() {
-        if(!updatedContours) return null;
+    public synchronized List<FieldBall> getBallContours() {
+        //if(!updatedContours) return new ArrayList<>();
         updatedContours = false; // make sure we dont waste resources by going over the same contours twice
 
-        return contour2Ball();
+        return new ArrayList<>(fieldBalls);
     }
 
     public BallColor getLastUpdateColor() {
@@ -122,6 +120,7 @@ public class BallPipeline extends OpenCvPipeline {
 
     @Override
     public Mat processFrame(Mat input) {
+        if(updatedContours) return input;
         updatedContours = true;
 
         Imgproc.cvtColor(input, hsvFrame, Imgproc.COLOR_RGB2HSV);
@@ -138,13 +137,12 @@ public class BallPipeline extends OpenCvPipeline {
         smooth(filteredFrame);
 
         Point offset = new Point(0, 0);
-        synchronized(contours) {
-            contours.clear();
-            Imgproc.findContours(filteredFrame, contours, hierarchy,
-                    Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE, offset);
+        contours.clear();
+        Imgproc.findContours(filteredFrame, contours, hierarchy,
+                Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE, offset);
 
-            filterContours(contours);
-        }
+        filterContours(contours);
+        contour2Ball();
 
 
         for(MatOfPoint contour : contours) {

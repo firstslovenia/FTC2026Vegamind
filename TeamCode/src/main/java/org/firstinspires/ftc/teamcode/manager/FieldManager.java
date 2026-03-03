@@ -44,21 +44,32 @@ public class FieldManager extends Process {
         this.streamHeight = streamHeight;
         this.horFov = fov;
         this.verFov = (streamHeight / streamWidth) * fov;
-        this.focalLengthPx = (3.67 / 4.8) * streamWidth; // (focalLengthMm / sensorWidthMm) * streamWidth
+        this.focalLengthPx = 1105;
         this.telemetry = telemetry;
 
         fieldBalls = new ArrayList<>();
 
         pipeline = new BallPipeline(webcamName, (int) streamWidth, (int) streamHeight,
                 hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName()));
+        initField();
     }
 
+    public static void ensureSize(ArrayList<?> list, int size) {
+        list.ensureCapacity(size);
+        while (list.size() < size) {
+            list.add(null);
+        }
+    }
+
+
     void initField() {
-        fieldGrid = new ArrayList<>(GRID_SIZE);
-        for(var list : fieldGrid) {
-            list = new ArrayList<>(GRID_SIZE);
-            for(var balls : list) {
-                balls = new ArrayList<>();
+        fieldGrid = new ArrayList<>();
+        ensureSize((ArrayList<?>) fieldGrid, GRID_SIZE);
+        for(int i = 0; i < fieldGrid.size(); i++) {
+             fieldGrid.set(i, new ArrayList<>());
+            ensureSize((ArrayList<?>)fieldGrid.get(i), GRID_SIZE);
+            for(int y = 0; y < fieldGrid.size(); y++) {
+                fieldGrid.get(i).set(y, new ArrayList<>());
             }
         }
     }
@@ -73,7 +84,8 @@ public class FieldManager extends Process {
     protected synchronized void update() {
         List<FieldBall> balls = pipeline.getBallContours();
         BallColor currentColor = pipeline.getLastUpdateColor(); // technically a race condition possible but the lion isnt worried
-        clearFieldArea(currentColor);
+        //clearFieldArea(currentColor);
+        telemetry.addData("size", balls.size());
 
         for(FieldBall ball : balls) {
             computePositions(ball);
@@ -108,8 +120,8 @@ public class FieldManager extends Process {
 
     void computePositions(FieldBall fieldBall) {
         // Normalize pixel
-        double Xn = (fieldBall.getX() - streamWidth / 2) / focalLengthPx;
-        double Yn = (fieldBall.getY() - streamHeight / 2) / focalLengthPx;
+        double Xn = (fieldBall.getX() - 667) / focalLengthPx;
+        double Yn = (fieldBall.getY() - 346) / focalLengthPx;
 
         // Apply pitch rotation
         double rx = Xn;
@@ -117,22 +129,24 @@ public class FieldManager extends Process {
         double rz = Yn * Math.sin(pitch) + Math.cos(pitch); // In radians
 
         // Solve for intersection with ground
-        double t = -(this.camOffsetY / rz); // camOffsetY is camera height
+        double t = (camPlaneY / ry); // camOffsetY is camera height
 
         // Final coordinates
         fieldBall.realX = camPlaneX + t * rx;
-        fieldBall.realY = camPlaneY + t * ry;
+        fieldBall.realY = camPlaneY + t * rz;
 
-        fieldGrid
-                .get((int)Math.floor(fieldBall.realY / BALL_SIZE))
-                .get((int)Math.floor(fieldBall.realX / BALL_SIZE))
-                .add(fieldBall);
+       /* if(fieldBall.realY / BALL_SIZE > 0 && fieldBall.realY / BALL_SIZE < GRID_SIZE &&
+        fieldBall.realX / BALL_SIZE > 0 && fieldBall.realX / BALL_SIZE < GRID_SIZE)  {
+            fieldGrid
+                    .get((int)Math.floor(fieldBall.realY / BALL_SIZE))
+                    .get((int)Math.floor(fieldBall.realX / BALL_SIZE))
+                    .add(fieldBall);
+        }*/
 
         if(telemetry != null) {
             // Temporary, write out positions:
-            this.telemetry.addData("Ball X:", fieldBall.realX);
-            this.telemetry.addData("Ball Y:", fieldBall.realY);
-            this.telemetry.update();
+            telemetry.addData("Ball X:", fieldBall.realX);
+            telemetry.addData("Ball Y:", fieldBall.realY);
         }
     }
 

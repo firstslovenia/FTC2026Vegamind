@@ -20,18 +20,25 @@ public class VisionTeleop extends OpMode {
 
     //BallPipeline pipeline;
     FieldManager fieldManager;
+    Servo camSwivel;
 
     @Override
     public void init() {
         /*pipeline = new BallPipeline(hardwareMap.get(WebcamName.class, "webcam"), 1280, 720,
                 hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName()));*/
         fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
-                1280, 720, 0, 70, .35, 200, telemetry);
+                1280, 720, 0, 0, .35, 200, telemetry);
+        camSwivel =  hardwareMap.get(Servo.class, "camSwivel");
+        camSwivel.setPosition(0.0);
         fieldManager.start();
+
     }
 
     @Override
     public void loop() {
-        fieldManager.updateCamInfo(3.141593 / 4, 0, 0);
+        fieldManager.updateCamInfo(0, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
+        camSwivel.setPosition(camSwivel.getPosition() + gamepad1.left_stick_y * 0.002);
+        //telemetry.addData("deg", Math.toDegrees(3.14159 / 2 - camSwivel.getPosition() * 3.14159));
+        telemetry.update();
     }
 }
