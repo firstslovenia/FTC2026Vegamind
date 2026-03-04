@@ -30,7 +30,7 @@ public class PedroPathRed {
 
         hardcode1X = 100; hardcode1Y = 84; hardcode1Deg = Math.toRadians(0);
         hardcode2X = 100; hardcode2Y = 60; hardcode2Deg = Math.toRadians(0);
-        hardcode3X = 100; hardcode2Y = 35; hardcode3Deg = Math.toRadians(0);
+        hardcode3X = 100; hardcode3Y = 35; hardcode3Deg = Math.toRadians(0);
 
         /*PathShoot = follower.pathBuilder()
                 .addPath(

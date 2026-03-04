@@ -118,18 +118,18 @@ public class RedAutonomous extends OpMode {
         ));
     }
 
-    public void autoShoot() {
+    void shootSeq() {
         PathChain shootPath = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
                 new Pose(pedroPathRed.shootX, pedroPathRed.shootY)
         )).setLinearHeadingInterpolation(0, pedroPathRed.shootDeg).build(); // Start heading is 0deg
         follower.followPath(shootPath);
         waitF();
-        shooterManager.startShooting();
+        shooterManager.startShooting(getBasketDistance());
         while (shooterManager.isActive()); // This might spike CPU usage :(
     }
 
-    public void intakeBalls() {
+    void pickupBalls() {
         intakeManager.startIntaking();
         PathChain newPath = follower.pathBuilder()
                 .addPath(
@@ -145,8 +145,8 @@ public class RedAutonomous extends OpMode {
         follower.followPath(newPath);
         waitF();
         intakeManager.stopIntaking();
-        follower.setMaxPower(1.0);
 
+        follower.setMaxPower(1.0);
     }
 
     @Override
@@ -154,8 +154,15 @@ public class RedAutonomous extends OpMode {
         camSwivel.setPosition(0.4);
         fieldManager.updateCamInfo(25, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
 
-        autoShoot();
-        // 1
+        shootSeq();
+
+        PathChain scout1 = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathRed.scout1X, pedroPathRed.scout1Y)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.scout1Deg).build();
+        follower.followPath(scout1);
+        waitF();
+
         PathChain newPath = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
@@ -169,10 +176,10 @@ public class RedAutonomous extends OpMode {
         follower.followPath(newPath);
         waitF();
 
-        intakeBalls();
-        autoShoot();
+        pickupBalls();
+        shootSeq();
 
-        newPath = follower.pathBuilder()
+       newPath = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
                                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
@@ -185,8 +192,8 @@ public class RedAutonomous extends OpMode {
         follower.followPath(newPath);
         waitF();
 
-        intakeBalls();
-        autoShoot();
+        pickupBalls();
+        shootSeq();
 
         newPath = follower.pathBuilder()
                 .addPath(
@@ -200,11 +207,9 @@ public class RedAutonomous extends OpMode {
                 .build();
         follower.followPath(newPath);
         waitF();
-        shooterManager.startShooting();
-        while (shooterManager.isActive()); // This might spike CPU usage :(
 
-        intakeBalls();
-        autoShoot();
+        pickupBalls();
+        shootSeq();
         /*
 
 

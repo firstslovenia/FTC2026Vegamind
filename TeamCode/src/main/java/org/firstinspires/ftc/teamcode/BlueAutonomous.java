@@ -103,7 +103,6 @@ public class BlueAutonomous extends OpMode {
 
         return closest;
     }
-
     protected double getBasketDistance() {
         Pose tPos = new Pose(130, 130);
 
@@ -113,7 +112,7 @@ public class BlueAutonomous extends OpMode {
         ));
     }
 
-    public void autoShoot() {
+    void shootSeq() {
         PathChain shootPath = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
                 new Pose(pedroPathBlue.shootX, pedroPathBlue.shootY)
@@ -124,7 +123,7 @@ public class BlueAutonomous extends OpMode {
         while (shooterManager.isActive()); // This might spike CPU usage :(
     }
 
-    public void intakeBalls() {
+    void pickupBalls() {
         intakeManager.startIntaking();
         PathChain newPath = follower.pathBuilder()
                 .addPath(
@@ -140,8 +139,8 @@ public class BlueAutonomous extends OpMode {
         follower.followPath(newPath);
         waitF();
         intakeManager.stopIntaking();
-        follower.setMaxPower(1.0);
 
+        follower.setMaxPower(1.0);
     }
 
     @Override
@@ -149,8 +148,15 @@ public class BlueAutonomous extends OpMode {
         camSwivel.setPosition(0.4);
         fieldManager.updateCamInfo(25, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
 
-        autoShoot();
-        // 1
+        shootSeq();
+
+        PathChain scout1 = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathBlue.scout1X, pedroPathBlue.scout1Y)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.scout1Deg).build();
+        follower.followPath(scout1);
+        waitF();
+
         PathChain newPath = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
@@ -164,8 +170,8 @@ public class BlueAutonomous extends OpMode {
         follower.followPath(newPath);
         waitF();
 
-        intakeBalls();
-        autoShoot();
+        pickupBalls();
+        shootSeq();
 
         newPath = follower.pathBuilder()
                 .addPath(
@@ -179,11 +185,9 @@ public class BlueAutonomous extends OpMode {
                 .build();
         follower.followPath(newPath);
         waitF();
-        shooterManager.startShooting();
-        while (shooterManager.isActive()); // This might spike CPU usage :(
 
-        intakeBalls();
-        autoShoot();
+        pickupBalls();
+        shootSeq();
 
         newPath = follower.pathBuilder()
                 .addPath(
@@ -198,8 +202,8 @@ public class BlueAutonomous extends OpMode {
         follower.followPath(newPath);
         waitF();
 
-        intakeBalls();
-        autoShoot();
+        pickupBalls();
+        shootSeq();
         /*
 
 
@@ -244,7 +248,7 @@ public class BlueAutonomous extends OpMode {
         follower.setMaxPower(1.0);
         shootPath = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                new Pose(pedroPathBlue.shootX, pedroPathBlue.shootY)
+                new Pose(pedroPathBlue.shootX, pedroPathRed.shootY)
         )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.shootDeg).build();
         follower.followPath(shootPath);
         waitF();
@@ -254,7 +258,7 @@ public class BlueAutonomous extends OpMode {
         // 2
         scout1 = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                new Pose(pedroPathBlue.scout2X, pedroPathBlue.scout2Y)
+                new Pose(pedroPathBlue.scout2X, pedroPathRed.scout2Y)
         )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.scout2Deg).build();
         follower.followPath(scout1);
         waitF();
@@ -295,7 +299,7 @@ public class BlueAutonomous extends OpMode {
         follower.setMaxPower(1.0);
         shootPath = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                new Pose(pedroPathBlue.shootX, pedroPathBlue.shootY)
+                new Pose(pedroPathBlue.shootX, pedroPathRed.shootY)
         )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.shootDeg).build();
         follower.followPath(shootPath);
         waitF();
@@ -305,7 +309,7 @@ public class BlueAutonomous extends OpMode {
         // 3
         scout1 = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                new Pose(pedroPathBlue.scout3X, pedroPathBlue.scout3Y)
+                new Pose(pedroPathBlue.scout3X, pedroPathRed.scout3Y)
         )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.scout3Deg).build();
         follower.followPath(scout1);
         waitF();
@@ -346,7 +350,7 @@ public class BlueAutonomous extends OpMode {
         follower.setMaxPower(1.0);
         shootPath = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                new Pose(pedroPathBlue.shootX, pedroPathBlue.shootY)
+                new Pose(pedroPathBlue.shootX, pedroPathRed.shootY)
         )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.shootDeg).build();
         follower.followPath(shootPath);
         waitF();
