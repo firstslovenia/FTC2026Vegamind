@@ -131,7 +131,7 @@ public class BlueAutonomous extends OpMode {
         )).setLinearHeadingInterpolation(180, pedroPathBlue.shootDeg).build(); // Start heading is 180deg
         follower.followPath(shootPath);
         waitF();
-        shooterManager.startShooting();
+        //shooterManager.startShooting();
         while (shooterManager.isActive()); // This might spike CPU usage :(
 
         // 1
@@ -187,7 +187,7 @@ public class BlueAutonomous extends OpMode {
         )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.shootDeg).build();
         follower.followPath(shootPath);
         waitF();
-        shooterManager.startShooting();
+        //shooterManager.startShooting();
         while (shooterManager.isActive()); // This might spike CPU usage :(
 
         // 2
@@ -238,7 +238,7 @@ public class BlueAutonomous extends OpMode {
         )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.shootDeg).build();
         follower.followPath(shootPath);
         waitF();
-        shooterManager.startShooting();
+        //shooterManager.startShooting();
         while (shooterManager.isActive()); // This might spike CPU usage :(
 
         // 3
@@ -289,7 +289,7 @@ public class BlueAutonomous extends OpMode {
         )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.shootDeg).build();
         follower.followPath(shootPath);
         waitF();
-        shooterManager.startShooting();
+        //shooterManager.startShooting();
         while (shooterManager.isActive()); // This might spike CPU usage :(
     }
 

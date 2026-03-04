@@ -63,7 +63,7 @@ public class TestTeleop extends OpMode {
 //        motor.setPower(gamepad1.left_trigger * 0.3);
 //        magazine.update(telemetry);
 
-        if(gamepad1.triangle) {
+        /*if(gamepad1.triangle) {
             magazine.rotateToBall(0);
         }
         else if(gamepad1.circle) {
@@ -80,7 +80,7 @@ public class TestTeleop extends OpMode {
             shooterManager.startShooting();
         }
         if(gamepad1.dpad_down)
-            intakeManager.startIntaking();
+            intakeManager.startIntaking();*/
 
         telemetry.addData("s1", magazine.getBallAtSlot(0));
         telemetry.addData("s2", magazine.getBallAtSlot(1));

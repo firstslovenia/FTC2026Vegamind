@@ -10,16 +10,16 @@ public class PrimaryMap extends InputMap{
 
     @Override
     public double driveX() {
-        return gamepad.right_stick_x;
+        return gamepad.left_stick_x;
     }
 
     @Override
     public double driveY() {
-        return gamepad.right_stick_y;
+        return gamepad.left_stick_y;
     }
 
     @Override
     public double rotateX() {
-        return gamepad.left_stick_x;
+        return (gamepad.right_bumper ? 1 : 0) - (gamepad.left_bumper ? 1 : 0);
     }
 }

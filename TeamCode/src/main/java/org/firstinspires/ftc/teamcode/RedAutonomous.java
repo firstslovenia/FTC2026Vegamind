@@ -121,7 +121,7 @@ public class RedAutonomous extends OpMode {
         )).setLinearHeadingInterpolation(0, pedroPathRed.shootDeg).build(); // Start heading is 0deg
         follower.followPath(shootPath);
         waitF();
-        shooterManager.startShooting();
+        //shooterManager.startShooting();
         while (shooterManager.isActive()); // This might spike CPU usage :(
 
         // 1
@@ -167,7 +167,7 @@ public class RedAutonomous extends OpMode {
         )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.shootDeg).build();
         follower.followPath(shootPath);
         waitF();
-        shooterManager.startShooting();
+        //shooterManager.startShooting();
         while (shooterManager.isActive()); // This might spike CPU usage :(
 
         /*
