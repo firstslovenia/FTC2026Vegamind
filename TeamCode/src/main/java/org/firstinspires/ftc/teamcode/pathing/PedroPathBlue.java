@@ -16,6 +16,10 @@ public class PedroPathBlue {
     public double shootY, scout1Y, scout2Y, scout3Y;
     public double shootDeg, scout1Deg, scout2Deg, scout3Deg;
 
+    public double hardcode1X, hardcode1Y, hardcode1Deg;
+    public double hardcode2X, hardcode2Y, hardcode2Deg;
+    public double hardcode3X, hardcode3Y, hardcode3Deg;
+
     public PedroPathBlue(Follower follower) {
         shootX = 60.5; shootY = 102.425;
         scout1X = 45; scout1Y = 110;
@@ -26,6 +30,10 @@ public class PedroPathBlue {
         scout1Deg = Math.toRadians(270);
         scout2Deg = Math.toRadians(270);
         scout3Deg = Math.toRadians(270);
+
+        hardcode1X = 42; hardcode1Y = 84; hardcode1Deg = Math.toRadians(0);
+        hardcode2X = 42; hardcode2Y = 60; hardcode2Deg = Math.toRadians(0);
+        hardcode3X = 42; hardcode2Y = 35; hardcode3Deg = Math.toRadians(0);
 
         /*PathShoot = follower.pathBuilder()
                 .addPath(

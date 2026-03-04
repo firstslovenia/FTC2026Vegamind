@@ -3,7 +3,9 @@ package org.firstinspires.ftc.teamcode;
 //exp  0 magazin
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
@@ -58,6 +60,20 @@ public class MainTeleop extends OpMode {
 
         double heading = Math.atan2(tPos.getY() - follower.getPose().getY(), tPos.getX() - follower.getPose().getX());
         follower.turnTo(heading);
+        PathChain pathChain = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                follower.getPose()
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), heading)
+                .build();
+
+        follower.followPath(pathChain);
+        while(follower.isBusy());
+        follower.startTeleOpDrive(true);
+        follower.update();
     }
 
     protected double getBasketDistance() {

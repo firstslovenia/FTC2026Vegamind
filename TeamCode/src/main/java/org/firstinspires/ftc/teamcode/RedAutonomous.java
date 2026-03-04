@@ -109,43 +109,29 @@ public class RedAutonomous extends OpMode {
         return new MapPoint(toX, toY, follower.getHeading(), follower.getHeading() - 3.14 / 2); // Heading is in radians
     }
 
+    protected double getBasketDistance() {
+        Pose tPos = new Pose(130, 130);
 
-    @Override
-    public void start() {
-        camSwivel.setPosition(0.4);
-        fieldManager.updateCamInfo(25, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
+        return Math.sqrt((
+                Math.pow(follower.getPose().getX() - tPos.getX(), 2) +
+                        Math.pow(follower.getPose().getY() - tPos.getY(), 2)
+        ));
+    }
 
+    public void autoShoot() {
         PathChain shootPath = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
                 new Pose(pedroPathRed.shootX, pedroPathRed.shootY)
         )).setLinearHeadingInterpolation(0, pedroPathRed.shootDeg).build(); // Start heading is 0deg
         follower.followPath(shootPath);
         waitF();
-        //shooterManager.startShooting();
+        shooterManager.startShooting();
         while (shooterManager.isActive()); // This might spike CPU usage :(
+    }
 
-        // 1
-        PathChain scout1 = follower.pathBuilder().addPath(new BezierLine(
-                new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                new Pose(pedroPathRed.scout1X, pedroPathRed.scout1Y)
-        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.scout1Deg).build();
-        follower.followPath(scout1);
-        waitF();
-
-        PathChain newPath = follower.pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                                //new Pose(closest.getY(), follower.getPose().getY())
-                                new Pose(pedroPathRed.hardcode1X, pedroPathRed.hardcode1Y)
-                        )
-                )
-                .setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.hardcode1Deg) // Rotate towards balls
-                .build();
-        follower.followPath(newPath);
-        waitF();
+    public void intakeBalls() {
         intakeManager.startIntaking();
-        newPath = follower.pathBuilder()
+        PathChain newPath = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
                                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
@@ -159,17 +145,66 @@ public class RedAutonomous extends OpMode {
         follower.followPath(newPath);
         waitF();
         intakeManager.stopIntaking();
-
         follower.setMaxPower(1.0);
-        shootPath = follower.pathBuilder().addPath(new BezierLine(
-                new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                new Pose(pedroPathRed.shootX, pedroPathRed.shootY)
-        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.shootDeg).build();
-        follower.followPath(shootPath);
+
+    }
+
+    @Override
+    public void loop() {
+        camSwivel.setPosition(0.4);
+        fieldManager.updateCamInfo(25, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
+
+        autoShoot();
+        // 1
+        PathChain newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(pedroPathRed.hardcode1X, pedroPathRed.hardcode1Y)
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.hardcode1Deg) // Rotate towards balls
+                .build();
+        follower.followPath(newPath);
         waitF();
-        //shooterManager.startShooting();
+
+        intakeBalls();
+        autoShoot();
+
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(pedroPathRed.hardcode2X, pedroPathRed.hardcode2Y)
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.hardcode1Deg) // Rotate towards balls
+                .build();
+        follower.followPath(newPath);
+        waitF();
+
+        intakeBalls();
+        autoShoot();
+
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(pedroPathRed.hardcode3X, pedroPathRed.hardcode3Y)
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.hardcode1Deg) // Rotate towards balls
+                .build();
+        follower.followPath(newPath);
+        waitF();
+        shooterManager.startShooting();
         while (shooterManager.isActive()); // This might spike CPU usage :(
 
+        intakeBalls();
+        autoShoot();
         /*
 
 
@@ -325,29 +360,5 @@ public class RedAutonomous extends OpMode {
 
 
          */
-    }
-
-    @Override
-    public void loop() {
-
-        /*if(secondaryMap.startShooting())
-            shooterManager.start();
-        if(secondaryMap.stopShooting())
-            shooterManager.stop();
-        if(secondaryMap.incBall())
-            shooterManager.incCurrSlot();
-        if(secondaryMap.toggleIntake())
-            intake.windup();
-        else
-            intake.winddown();
-
-        if(secondaryMap.setupMag())
-            magazine.setIntake();
-
-
-        shooterManager.update(telemetry);
-        magazine.update(telemetry);
-
-        drive.drive(primaryMap.driveX(), primaryMap.driveY(), primaryMap.rotateX());*/
     }
 }

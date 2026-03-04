@@ -77,7 +77,7 @@ public class TestTeleop extends OpMode {
         }
 
         if(gamepad1.dpad_up) {
-            shooterManager.startShooting();
+//            shooterManager.startShooting();
         }
         if(gamepad1.dpad_down)
             intakeManager.startIntaking();*/
