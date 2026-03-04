@@ -21,7 +21,7 @@ public class PedroPathRed {
         scout2X = 100; scout2Y = 90;
         scout3X = 100; scout3Y = 66;
 
-        shootDeg = Math.toRadians(45);
+        shootDeg = Math.toRadians(35);
         scout1Deg = Math.toRadians(270);
         scout2Deg = Math.toRadians(270);
         scout3Deg = Math.toRadians(270);

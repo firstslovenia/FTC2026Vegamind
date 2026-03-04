@@ -158,7 +158,7 @@ public class Magazine extends Process {
             case IDLE:
                 break;
             case ROTATE:
-                if(approxEq(pos, motorPositions[currIndex], 50) && approxEq(lastEncoderPos, pos, 15)) {
+                if(approxEq(pos, motorPositions[currIndex], 70) && approxEq(lastEncoderPos, pos, 15)) {
                     //magState = State.DEPOSIT;
                     magState = State.IDLE;
                 }

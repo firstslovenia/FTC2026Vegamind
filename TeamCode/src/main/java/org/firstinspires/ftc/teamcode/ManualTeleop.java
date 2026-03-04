@@ -18,6 +18,7 @@ import org.firstinspires.ftc.teamcode.drive.Drive;
 import org.firstinspires.ftc.teamcode.input.PrimaryMap;
 import org.firstinspires.ftc.teamcode.input.SecondaryMap;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
+import org.firstinspires.ftc.teamcode.manager.Alliance;
 
 @TeleOp(name = "ManualTeleOp", group = "FTC 26")
 public class ManualTeleop extends OpMode {

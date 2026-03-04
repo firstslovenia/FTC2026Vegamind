@@ -61,7 +61,7 @@ public class BlueAutonomous extends OpMode {
                 null,  hardwareMap.get(WebcamName.class, "magCam"), hardwareMap.get(RevBlinkinLedDriver.class, "light"), 50);
         shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.REVERSE, 1.0);
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.8);
-        shooterManager = new ShooterManager(magazine, shooter, 23, 100);
+        shooterManager = new ShooterManager(magazine, shooter, hardwareMap.get(Servo.class, "shooterServo"), 23, 100);
         intakeManager = new IntakeManager(magazine, intake, 50);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());

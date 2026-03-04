@@ -45,7 +45,7 @@ public class FieldManager extends Process {
         this.streamHeight = streamHeight;
         this.horFov = fov;
         this.verFov = (streamHeight / streamWidth) * fov;
-        this.focalLengthPx = 1105;
+        this.focalLengthPx = 978;
         this.telemetry = telemetry;
 
         fieldBalls = new ArrayList<>();
@@ -125,20 +125,19 @@ public class FieldManager extends Process {
 
     void computePositions(FieldBall fieldBall) {
         // Normalize pixel
-        double Xn = (fieldBall.getX() - 640) / 920;
-        double Yn = (fieldBall.getY() - 360) / 920;
+        double Xn = (fieldBall.getX() -  636) / focalLengthPx;
+        double Yn = (fieldBall.getY() - 480) / focalLengthPx;
 
         // Apply pitch rotation
-        double rx = Xn;
         double ry = Yn * Math.cos(pitch) - Math.sin(pitch); // In radians
         double rz = Yn * Math.sin(pitch) + Math.cos(pitch); // In radians
 
         // Solve for intersection with ground
-        double t = (camPlaneY / ry); // camOffsetY is camera height
+        double t = -(this.camPlaneY / rz); // camOffsetY is camera height (any unit - will match output)
 
         // Final coordinates
-        fieldBall.realY = camPlaneX + t * rx; // THESE TWO ARE SWITCHED OUT TO COINCIDE WITH THE PEDROPATHING'S COORD SYSTEM!
-        fieldBall.realX = t * rz;
+        fieldBall.realX = t * Xn;
+        fieldBall.realY = t * ry;
 
        if(fieldBall.realY / BALL_SIZE > 0 && fieldBall.realY / BALL_SIZE < GRID_SIZE &&
         fieldBall.realX / BALL_SIZE > 0 && fieldBall.realX / BALL_SIZE < GRID_SIZE)  {
@@ -155,8 +154,6 @@ public class FieldManager extends Process {
             telemetry.addData("Ball X:", fieldBall.realX);
             telemetry.addData("Ball Y:", fieldBall.realY);
             telemetry.addData("t", t);
-            telemetry.addData("planeY", camPlaneY);
-            telemetry.addData("planeX", camPlaneX);
             telemetry.addData("pitch", pitch);
         }
     }

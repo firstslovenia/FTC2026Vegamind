@@ -18,6 +18,7 @@ import org.firstinspires.ftc.teamcode.input.PrimaryMap;
 import org.firstinspires.ftc.teamcode.input.SecondaryMap;
 import org.firstinspires.ftc.teamcode.intake.Intake;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
+import org.firstinspires.ftc.teamcode.manager.Alliance;
 import org.firstinspires.ftc.teamcode.manager.ShooterManager;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 
@@ -38,6 +39,32 @@ public class MainTeleop extends OpMode {
 
     double basketX, basketY;
 
+
+    Alliance alliance;
+
+    Pose getBasketPos() {
+        Pose bPos = new Pose(15, 130);
+        Pose rPos = new Pose(130, 130);
+
+        return alliance == Alliance.BLUE ? bPos : rPos;
+    }
+
+    protected void turnTowardBasket(Alliance alliance) {
+        Pose tPos = getBasketPos();
+
+        double heading = Math.atan2(tPos.getY() - follower.getPose().getY(), tPos.getX() - follower.getPose().getX());
+        follower.turnTo(heading);
+    }
+
+    protected double getBasketDistance() {
+        Pose tPos = getBasketPos();
+
+        return Math.sqrt((
+                Math.pow(follower.getPose().getX() - tPos.getX(), 2) +
+                Math.pow(follower.getPose().getY() - tPos.getY(), 2)
+        ));
+    }
+
     Pose prevPose;
     @Override
     public void init() {
@@ -48,7 +75,7 @@ public class MainTeleop extends OpMode {
          //       hardwareMap.get(TouchSensor.class, "outtakeSensor"), hardwareMap.get(ColorSensor.class, "colorAlt"), hardwareMap.get(DistanceSensor.class, "distance"));
         shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.REVERSE, 1.0);
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.4);
-        shooterManager = new ShooterManager(magazine, shooter, 23, 100);
+        shooterManager = new ShooterManager(magazine, shooter, hardwareMap.get(Servo.class, "shooterServo"), 23, 100);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
 
@@ -64,7 +91,7 @@ public class MainTeleop extends OpMode {
     public void loop() {
 
         if(secondaryMap.startShooting())
-            shooterManager.startShooting();
+            shooterManager.startShooting(getBasketDistance());
         if(secondaryMap.stopShooting())
             shooterManager.stopShooting();
         if(secondaryMap.incBall())

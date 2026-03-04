@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
@@ -22,6 +23,8 @@ public class VisionTeleop extends OpMode {
     FieldManager fieldManager;
     Servo camSwivel;
 
+    AnalogInput potentiometer;
+
     @Override
     public void init() {
         /*pipeline = new BallPipeline(hardwareMap.get(WebcamName.class, "webcam"), 1280, 720,
@@ -32,11 +35,16 @@ public class VisionTeleop extends OpMode {
         camSwivel.setPosition(0.0);
         fieldManager.start();
 
+        potentiometer = hardwareMap.get(AnalogInput.class, "potentiometer");
+
     }
 
     @Override
     public void loop() {
-        fieldManager.updateCamInfo(25, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
+//        double pitch = 3.14159 / 2 - camSwivel.getPosition() * 3.14159;
+        double pitch = Math.abs(potentiometer.getVoltage() / potentiometer.getMaxVoltage() - 0.5) * 3.14 / 2;
+
+        fieldManager.updateCamInfo(0, 39 - Math.sin(pitch) * 5, pitch);
         camSwivel.setPosition(camSwivel.getPosition() + gamepad1.left_stick_y * 0.002);
         //telemetry.addData("deg", Math.toDegrees(3.14159 / 2 - camSwivel.getPosition() * 3.14159));
         telemetry.update();

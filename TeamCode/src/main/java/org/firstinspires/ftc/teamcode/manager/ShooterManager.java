@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.manager;
 
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.color.BallColor;
@@ -8,6 +9,9 @@ import org.firstinspires.ftc.teamcode.process.Process;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 
 import java.util.concurrent.TimeUnit;
+
+import kotlin.Pair;
+import lombok.Getter;
 
 public class ShooterManager extends Process {
 
@@ -26,7 +30,7 @@ public class ShooterManager extends Process {
 
     boolean isWindingUp = false;
     int shotsLeft = 0;
-
+    double targetP = 0.0;
 
     State currState = State.INACTIVE;
 
@@ -34,28 +38,52 @@ public class ShooterManager extends Process {
     ElapsedTime windupTimer = new ElapsedTime();
 
     final int shootTime = 1500;
-    final int windupTime = 1000;
+    @Getter
+    final int windupTime = 1500;
 
-    public ShooterManager(Magazine magazine, BallIO shooter, int tagID, long updateInterval) {
+    Servo shooterServo;
+
+    final double[][] powerDistance =
+            {
+                    {330, 1},
+                    {240, 0.95},
+                    {200, 0.83},
+                    {170, 0.83},
+                    {120, 0.83},
+                    {90, 0.8},
+                    {80, 0.86},
+            };
+    public ShooterManager(Magazine magazine, BallIO shooter, Servo shooterServo, int tagID, long updateInterval) {
         super(updateInterval);
         gPos = tagID - 21;
         //https://ftc-resources.firstinspires.org/ftc/game/manual-10 - page 8
 
         this.magazine = magazine;
         this.shooter = shooter;
+        this.shooterServo = shooterServo;
         currState = State.INACTIVE;
-    }
-
-    public int getWindupTime() {
-        return windupTime;
+        shooterServo.setPosition(0);
     }
 
     public boolean isActive() {
         return currState != State.INACTIVE;
     }
 
-    public boolean startShooting() {
+    void findOptimalDistance(double dist) {
+        double bestDist = Math.abs(dist - powerDistance[0][0]);
+
+        for(int i = 1; i < powerDistance.length; i++) {
+            if(bestDist > Math.abs(dist - powerDistance[i][0])) {
+                targetP = powerDistance[i][1];
+                bestDist = Math.abs(dist - powerDistance[i][0]);
+            }
+        }
+    }
+
+    public boolean startShooting(double dist) {
         if(currState != State.INACTIVE) return false;
+
+        findOptimalDistance(dist);
 
         currState = State.BALL_SELECT;
         shotsLeft=3;
@@ -99,11 +127,13 @@ public class ShooterManager extends Process {
         if (shotsLeft > 0) currState = State.SHOOT;
         else currState = State.WINDDOWN;
         shooter.windup();
-        windupTimer.startTime();
+        shooterServo.setPosition(1);
+        windupTimer = new ElapsedTime();
+        windupTimer.reset();
     }
 
     void shootState() {
-        if(magazine.getMagState() != Magazine.State.IDLE || windupTimer.time(TimeUnit.MILLISECONDS) < windupTime) return;
+        if(magazine.getMagState() != Magazine.State.IDLE || windupTimer.milliseconds() < windupTime) return;
         magazine.depositBall();
 
         currSlot = ++currSlot % 3;
@@ -121,6 +151,7 @@ public class ShooterManager extends Process {
         if(magazine.getMagState() != Magazine.State.IDLE) return;
 
         shooter.winddown();
+        shooterServo.setPosition(0);
 
         currState = State.INACTIVE;
     }

@@ -2,7 +2,10 @@ package org.firstinspires.ftc.teamcode.vision;
 
 import android.util.Size;
 
+import com.pedropathing.follower.Follower;
+
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.manager.Alliance;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -49,7 +52,7 @@ public class AprilTagDetector {
     //at which point it returns that and stops
     //since we only need it to get the green artifact
     //pos
-    public int update() {
+    public int readObelisk() {
         List<AprilTagDetection> detections = processor.getDetections();
 
         if(detections.isEmpty()) return -1;

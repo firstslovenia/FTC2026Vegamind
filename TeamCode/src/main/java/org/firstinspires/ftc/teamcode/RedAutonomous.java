@@ -57,16 +57,24 @@ public class RedAutonomous extends OpMode {
         secondaryMap = new SecondaryMap(gamepad2);
         magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), null,
                 null,  hardwareMap.get(WebcamName.class, "magCam"), hardwareMap.get(RevBlinkinLedDriver.class, "light"), 50);
-        intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.4);
-        shooterManager = new ShooterManager(magazine, shooter, 23, 100);
-        shooterManager = new ShooterManager(magazine, shooter, 23, 100);
+        intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.7);
+        shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.FORWARD, 1.0);
+        shooterManager = new ShooterManager(magazine, shooter, hardwareMap.get(Servo.class, "shooterServo"), 23, 100);
+        intakeManager = new IntakeManager(magazine, intake, 50);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
         pedroPathRed = new PedroPathRed(follower);
+        fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
+                1280, 720, 0, 0, .35, 200, telemetry);
         camSwivel =  hardwareMap.get(Servo.class, "camSwivel");
+
+        //fieldManager.start();
+        shooterManager.start();
+        magazine.start();
         camSwivel.setPosition(0.0);
         follower.setPose(new Pose(110, 135));
         follower.update();
+        intakeManager.start();
     }
 
     MapPoint closest;
@@ -142,12 +150,12 @@ public class RedAutonomous extends OpMode {
                         new BezierLine(
                                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
                                 //new Pose(closest.getY(), follower.getPose().getY())
-                                new Pose(follower.getPose().getX(), closest.getY() + 20)
+                                new Pose(follower.getPose().getX() + 30, follower.getPose().getY())
                         )
                 )
-                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .setLinearHeadingInterpolation(follower.getHeading(), follower.getHeading()) // Rotate towards balls
                 .build();
-        follower.setMaxPower(0.3);
+        follower.setMaxPower(0.2);
         follower.followPath(newPath);
         waitF();
         intakeManager.stopIntaking();
