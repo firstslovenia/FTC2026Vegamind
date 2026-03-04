@@ -1,20 +1,16 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.graphics.Path;
-import android.graphics.Point;
-
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.TouchSensor;
 
-import org.apache.commons.math3.Field;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.auto.Constants;
 import org.firstinspires.ftc.teamcode.color.BallColor;
@@ -24,13 +20,12 @@ import org.firstinspires.ftc.teamcode.input.SecondaryMap;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
 import org.firstinspires.ftc.teamcode.manager.FieldBall;
 import org.firstinspires.ftc.teamcode.manager.FieldManager;
-import org.firstinspires.ftc.teamcode.manager.FieldStruct;
+import org.firstinspires.ftc.teamcode.manager.IntakeManager;
 import org.firstinspires.ftc.teamcode.manager.ShooterManager;
 import org.firstinspires.ftc.teamcode.pathing.PedroPathBlue;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 import org.firstinspires.ftc.teamcode.util.MapPoint;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Autonomous(name="Blue Autonomous", group="FTC 26")
@@ -47,6 +42,7 @@ public class BlueAutonomous extends OpMode {
     Follower follower;
     PedroPathBlue pedroPathBlue;
     FieldManager fieldManager;
+    IntakeManager intakeManager;
     Servo camSwivel;
 
 
@@ -54,6 +50,7 @@ public class BlueAutonomous extends OpMode {
 
     double basketX, basketY;
 
+    //magCam
     Pose prevPose;
     @Override
     public void init() {
@@ -61,23 +58,28 @@ public class BlueAutonomous extends OpMode {
         primaryMap = new PrimaryMap(gamepad1);
         secondaryMap = new SecondaryMap(gamepad2);
         magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), null,
-                null, 50);
+                null,  hardwareMap.get(WebcamName.class, "magCam"), hardwareMap.get(RevBlinkinLedDriver.class, "light"), 50);
         shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.REVERSE, 1.0);
-        intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.4);
+        intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.8);
         shooterManager = new ShooterManager(magazine, shooter, 23, 100);
+        intakeManager = new IntakeManager(magazine, intake, 50);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
         pedroPathBlue = new PedroPathBlue(follower);
         camSwivel =  hardwareMap.get(Servo.class, "camSwivel");
         camSwivel.setPosition(0.0);
         follower.setPose(new Pose(34.25, 135.75));
+        follower.update();
+
 
         fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
                 1280, 720, 0, 70, .35, 200, telemetry);
         fieldManager.start();
         magazine.start();
         shooterManager.start();
+        intakeManager.start();
     }
+    MapPoint closest;
 
     void waitF() {
         while (follower.isBusy()) {
@@ -103,10 +105,10 @@ public class BlueAutonomous extends OpMode {
     }
 
     MapPoint mapToField(FieldBall target) {
-        double toX = follower.getPose().getX() + Math.abs(target.getRealY());
-        double toY = follower.getPose().getY() - Math.abs(target.getRealX());
+        double toX = follower.getPose().getX() - target.getRealY() / 2.54;
+        double toY = follower.getPose().getY() - target.getRealX() / 2.54;
 
-        return new MapPoint(toX, toY, follower.getHeading(), follower.getHeading() + 90); // Heading is in radians
+        return new MapPoint(toX, toY, follower.getHeading(), follower.getHeading() - 3.14 / 2); // Heading is in radians
     }
 
     void pickupArtifacts(PathChain path) {
@@ -119,9 +121,9 @@ public class BlueAutonomous extends OpMode {
     }
 
     @Override
-    public void start() {
+    public void loop() {
         camSwivel.setPosition(0.4);
-        fieldManager.updateCamInfo(0, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
+        fieldManager.updateCamInfo(25, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
 
         // TODO: Go to Shooting path first for preload; I'm skipping since I just want to scout balls right now
         /*PathChain scout1 = follower.pathBuilder().addPath(new BezierLine(
@@ -139,21 +141,38 @@ public class BlueAutonomous extends OpMode {
         List<FieldBall> balls = fieldManager.getFieldBalls();
         do {
             balls = fieldManager.getFieldBalls();
-        } while (balls.isEmpty() || balls.get(0).getColor() == BallColor.GREEN);
-        MapPoint closest = mapToField(closestToOrigin(balls)); // Unless something goes really wrong, this should always be on our side
+        } while (balls.isEmpty() || balls.get(0).getColor() != BallColor.GREEN);
+        closest = mapToField(closestToOrigin(balls)); // Unless something goes really wrong, this should always be on our side
         PathChain newPath = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
                                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                                new Pose(follower.getPose().getX(), closest.getY())
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(closest.getX(), follower.getPose().getY())
                         )
                 )
-                .setLinearHeadingInterpolation(closest.getFromHeading(), closest.getToHeading() + Math.toRadians(90)) // Rotate towards balls
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
                 .build();
         follower.followPath(newPath);
         waitF();
+        intakeManager.startIntaking();
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(follower.getPose().getX(), closest.getY() - 20)
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .build();
+        follower.setMaxPower(0.3);
+        follower.followPath(newPath);
+        waitF();
+        intakeManager.stopIntaking();
 
-        /*pickupArtifacts(newPath);
+        /*
+        pickupArtifacts(newPath);
 
         // Eat the balls
         // Move to scout 2
@@ -180,6 +199,14 @@ public class BlueAutonomous extends OpMode {
     }
 
     @Override
-    public void loop() {
+    public void stop() {
+        try {
+            fieldManager.stop();
+            magazine.stop();
+            shooterManager.stop();
+        } catch (Exception ignored) {
+
+        }
     }
+
 }

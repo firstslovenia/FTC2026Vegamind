@@ -36,7 +36,7 @@ public class VisionTeleop extends OpMode {
 
     @Override
     public void loop() {
-        fieldManager.updateCamInfo(0, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
+        fieldManager.updateCamInfo(25, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
         camSwivel.setPosition(camSwivel.getPosition() + gamepad1.left_stick_y * 0.002);
         //telemetry.addData("deg", Math.toDegrees(3.14159 / 2 - camSwivel.getPosition() * 3.14159));
         telemetry.update();

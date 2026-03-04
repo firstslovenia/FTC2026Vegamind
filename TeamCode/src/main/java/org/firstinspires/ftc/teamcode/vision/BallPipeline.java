@@ -56,7 +56,7 @@ public class BallPipeline extends OpenCvPipeline {
             public void onOpened() {
                 cam.setPipeline(pipeline);
                 cam.showFpsMeterOnViewport(true);
-                cam.startStreaming(streamWidth, streamHeight, OpenCvCameraRotation.UPSIDE_DOWN);
+                cam.startStreaming(streamWidth, streamHeight, OpenCvCameraRotation.UPRIGHT);
             }
 
             @Override
@@ -101,7 +101,7 @@ public class BallPipeline extends OpenCvPipeline {
         for(MatOfPoint contour : contours) {
             Rect rect = Imgproc.boundingRect(contour);
             fieldBalls.add(
-                    new FieldBall(rect.x + rect.width / 2, rect.y + rect.height / 2, getLastUpdateColor())
+                    new FieldBall(rect.x + (double) rect.width / 2, rect.y + (double) rect.height / 2, getLastUpdateColor())
             );
         }
     }

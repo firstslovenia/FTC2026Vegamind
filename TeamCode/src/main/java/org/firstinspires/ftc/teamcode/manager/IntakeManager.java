@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.manager;
 
+import org.firstinspires.ftc.teamcode.color.BallColor;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
 import org.firstinspires.ftc.teamcode.process.Process;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
@@ -43,7 +44,7 @@ public class IntakeManager extends Process {
         return true;
     }
 
-    public void stopShooting() {
+    public void stopIntaking() {
         currState = State.WINDDOWN;
     }
 
@@ -58,7 +59,12 @@ public class IntakeManager extends Process {
     void ballSelectState() {
         if(magazine.getMagState() != Magazine.State.IDLE) return; // wait
 
-        magazine.rotateToBall(currSlot + 3);
+        if (!magazine.setIntake()) {
+            stopIntaking();
+            return;
+        }
+
+        magazine.resetSlot(magazine.getCurrIndex()-3);
         currState = State.INTAKE;
         intake.windup();
 
@@ -80,16 +86,14 @@ public class IntakeManager extends Process {
     }
 
     void intakeState() {
+//        if(magazine.getBallAtSlot(magazine.getCurrIndex() - 3) == BallColor.NONE)
+//            magazine.updateColorData();
         if(magazine.getMagState() != Magazine.State.IDLE) return;
 
         currSlot = ++currSlot % 3;
         intakesLeft--;
-        if(intakesLeft > 0) {
-            currState = State.BALL_SELECT;
-            return;
-        }
-
-        currState = State.WINDDOWN;
+        if(intakesLeft > 0) currState = State.BALL_SELECT;
+        else currState = State.WINDDOWN;
     }
 
     void windDownState() {

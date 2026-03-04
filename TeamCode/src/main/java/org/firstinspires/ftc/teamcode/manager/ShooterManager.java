@@ -2,9 +2,12 @@ package org.firstinspires.ftc.teamcode.manager;
 
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.color.BallColor;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
 import org.firstinspires.ftc.teamcode.process.Process;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
+
+import java.util.concurrent.TimeUnit;
 
 public class ShooterManager extends Process {
 
@@ -31,7 +34,7 @@ public class ShooterManager extends Process {
     ElapsedTime windupTimer = new ElapsedTime();
 
     final int shootTime = 1500;
-    final int windupTime = 3000; // idk smthn
+    final int windupTime = 1000;
 
     public ShooterManager(Magazine magazine, BallIO shooter, int tagID, long updateInterval) {
         super(updateInterval);
@@ -74,24 +77,22 @@ public class ShooterManager extends Process {
     void ballSelectState() {
         if(magazine.getMagState() != Magazine.State.IDLE) return; // wait
 
-        magazine.rotateToBall(currSlot);
-        currState = State.WINDUP;
 
-        return;
-       /*
-        Magazine.Color color = currSlot % 3 == gPos ? Magazine.Color.GREEN : Magazine.Color.PURPLE;
+        BallColor color = currSlot % 3 == gPos ? BallColor.GREEN : BallColor.PURPLE;
         if(magazine.setOuttake(color)) {
             currState = State.WINDUP;
             return; //great we can continue the pattern
         }
 
         boolean ret;
-        if(color == Magazine.Color.GREEN)
-            ret = magazine.setOuttake(Magazine.Color.PURPLE);
+        if(color == BallColor.GREEN)
+            ret = magazine.setOuttake(BallColor.PURPLE);
         else
-            ret = magazine.setOuttake(Magazine.Color.GREEN);
+            ret = magazine.setOuttake(BallColor.GREEN);
 
-        //if(!ret) stop(); // no more balls :(*/
+        currState = State.WINDUP;
+
+        if(!ret) stopShooting(); // no more balls :(*/
     }
 
     void windupState() {
@@ -102,7 +103,7 @@ public class ShooterManager extends Process {
     }
 
     void shootState() {
-        if(magazine.getMagState() != Magazine.State.IDLE) return;
+        if(magazine.getMagState() != Magazine.State.IDLE || windupTimer.time(TimeUnit.MILLISECONDS) < windupTime) return;
         magazine.depositBall();
 
         currSlot = ++currSlot % 3;

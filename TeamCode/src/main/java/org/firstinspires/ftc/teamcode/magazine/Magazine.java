@@ -1,12 +1,16 @@
 package org.firstinspires.ftc.teamcode.magazine;
 
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.color.BallColor;
 import org.firstinspires.ftc.teamcode.pid.MiniPID;
 import org.firstinspires.ftc.teamcode.process.Process;
+import org.firstinspires.ftc.teamcode.vision.MagazineCamPipeline;
 
 import lombok.Getter;
 
@@ -20,6 +24,7 @@ public class Magazine extends Process {
     TouchSensor intakeSensor;
     TouchSensor outtakeSensor;
 
+    @Getter
     int currIndex = -1;
     int outtakePosOffset = -30;
 
@@ -39,13 +44,7 @@ public class Magazine extends Process {
         DEPOSIT,
     };
 
-    public enum Color {
-        NONE,
-        PURPLE,
-        GREEN
-    }
-
-    Color[] slotColors = {Color.GREEN, Color.GREEN, Color.PURPLE};
+    BallColor[] slotColors;
 
     double[] motorPositions = {0.0, 2730, 5460, 4096, -1365, 1365};
 
@@ -54,7 +53,9 @@ public class Magazine extends Process {
 
     MiniPID pid;
 
-    public Magazine(DcMotor magazineMotor, Servo helpServo, TouchSensor intakeSensor, TouchSensor outtakeSensor,
+    MagazineCamPipeline pipeline;
+
+    public Magazine(DcMotor magazineMotor, Servo helpServo, TouchSensor intakeSensor, TouchSensor outtakeSensor, WebcamName webcamName, RevBlinkinLedDriver light,
                      long updateInterval) {
         super(updateInterval);
         this.magazineMotor = magazineMotor;
@@ -65,7 +66,9 @@ public class Magazine extends Process {
         magazineMotor.setPower(0.0);
         magazineMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        slotColors = new Color[]{Color.PURPLE, Color.GREEN, Color.GREEN};
+        light.setPattern(RevBlinkinLedDriver.BlinkinPattern.WHITE);
+
+        slotColors = new BallColor[]{BallColor.GREEN, BallColor.PURPLE, BallColor.PURPLE};
 
         servoCycleTimer = new ElapsedTime();
 
@@ -73,6 +76,9 @@ public class Magazine extends Process {
         magState = State.IDLE;
         currIndex = 0;
         helpServo.setPosition(1.0);
+
+        pipeline = new MagazineCamPipeline(webcamName, 640, 480);
+
     }
 
     double round(double x, int decimals) {
@@ -152,7 +158,7 @@ public class Magazine extends Process {
             case IDLE:
                 break;
             case ROTATE:
-                if(approxEq(pos, motorPositions[currIndex], 70) && approxEq(lastEncoderPos, pos, 15)) {
+                if(approxEq(pos, motorPositions[currIndex], 50) && approxEq(lastEncoderPos, pos, 15)) {
                     //magState = State.DEPOSIT;
                     magState = State.IDLE;
                 }
@@ -178,15 +184,24 @@ public class Magazine extends Process {
                 }
                 magState = State.IDLE;
         }
-        updateColorData();
 
         lastEncoderPos = pos;
+
+        if(currIndex > 2 && slotColors[currIndex-3] == BallColor.NONE)
+            updateColorData();
     }
 
-    void updateColorData() {
+    public synchronized void updateColorData() {
+        if(currIndex < 3) throw new RuntimeException("Tried updating color data while at invalid position " + Integer.toString(currIndex));
+        if(!approxEq(-magazineMotor.getCurrentPosition(), motorPositions[currIndex], 1365)) return;
+        slotColors[currIndex-3] = pipeline.getCurrentColor();
     }
 
-    int findSlotWithColor(Color color) {
+    public void resetSlot(int i) {
+        slotColors[i] = BallColor.NONE;
+    }
+
+    int findSlotWithColor(BallColor color) {
         for(int i = 0; i < slotColors.length; i++) {
             if(slotColors[i] == color) return i;
         }
@@ -195,29 +210,29 @@ public class Magazine extends Process {
     }
 
     public boolean setIntake() {
-        int index = findSlotWithColor(Color.NONE);
-
-        if(index == -1) return false;
-
-        return rotateToBall(index);
-    }
-
-    public boolean setOuttake(Color color) {
-        int index = findSlotWithColor(color);
+        int index = findSlotWithColor(BallColor.NONE);
 
         if(index == -1) return false;
 
         return rotateToBall(index + 3);
     }
 
+    public boolean setOuttake(BallColor color) {
+        int index = findSlotWithColor(color);
+
+        if(index == -1) return false;
+
+        return rotateToBall(index);
+    }
+
     public void depositBall() {
         if(magState != State.IDLE) throw new RuntimeException();
 
-        //TESTING slotColors[currIndex] = Color.NONE;
+        slotColors[currIndex] = BallColor.NONE;
         magState = State.DEPOSIT;
     }
 
-    public Color getBallAtSlot(int index) {
+    public BallColor getBallAtSlot(int index) {
         return slotColors[index];
     }
 }

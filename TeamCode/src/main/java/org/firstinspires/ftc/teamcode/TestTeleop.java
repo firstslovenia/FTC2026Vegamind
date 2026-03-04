@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
@@ -11,6 +12,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
 import org.firstinspires.ftc.teamcode.manager.IntakeManager;
 import org.firstinspires.ftc.teamcode.manager.ShooterManager;
@@ -34,11 +36,11 @@ public class TestTeleop extends OpMode {
 //        motor = hardwareMap.get(DcMotor.class, "intake");
 //        distance = hardwareMap.get(DistanceSensor.class, "distance");
 //
-        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), hardwareMap.get(TouchSensor.class, "intakeSensor"),
-                hardwareMap.get(TouchSensor.class, "outtakeSensor"), 50);
+        magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), null,
+                null,  hardwareMap.get(WebcamName.class, "magCam"), hardwareMap.get(RevBlinkinLedDriver.class, "light"), 50);
         magazine.start();
 
-        shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.REVERSE, 1.0);
+        shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.FORWARD, 1.0);
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.4);
         shooterManager = new ShooterManager(magazine, shooter, 23, 100);
         intakeManager = new IntakeManager(magazine, intake, 100);
@@ -79,6 +81,10 @@ public class TestTeleop extends OpMode {
         }
         if(gamepad1.dpad_down)
             intakeManager.startIntaking();
+
+        telemetry.addData("s1", magazine.getBallAtSlot(0));
+        telemetry.addData("s2", magazine.getBallAtSlot(1));
+        telemetry.addData("s3", magazine.getBallAtSlot(2));
 
         telemetry.update();
 

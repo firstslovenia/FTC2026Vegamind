@@ -91,7 +91,6 @@ public class FieldManager extends Process {
         telemetry.addData("size", balls.size());
 
         for(FieldBall ball : balls) {
-            if (ball.getY() < 400) { continue; } // TODO: Some constant idk; Calibrate
             computePositions(ball);
         }
         fieldBalls.clear();
@@ -126,8 +125,8 @@ public class FieldManager extends Process {
 
     void computePositions(FieldBall fieldBall) {
         // Normalize pixel
-        double Xn = (fieldBall.getX() - 667) / focalLengthPx;
-        double Yn = (fieldBall.getY() - 346) / focalLengthPx;
+        double Xn = (fieldBall.getX() - 640) / 920;
+        double Yn = (fieldBall.getY() - 360) / 920;
 
         // Apply pitch rotation
         double rx = Xn;
@@ -138,8 +137,8 @@ public class FieldManager extends Process {
         double t = (camPlaneY / ry); // camOffsetY is camera height
 
         // Final coordinates
-        fieldBall.realX = camPlaneX + t * rx;
-        fieldBall.realY = camPlaneY + t * rz;
+        fieldBall.realY = camPlaneX + t * rx; // THESE TWO ARE SWITCHED OUT TO COINCIDE WITH THE PEDROPATHING'S COORD SYSTEM!
+        fieldBall.realX = t * rz;
 
        if(fieldBall.realY / BALL_SIZE > 0 && fieldBall.realY / BALL_SIZE < GRID_SIZE &&
         fieldBall.realX / BALL_SIZE > 0 && fieldBall.realX / BALL_SIZE < GRID_SIZE)  {
@@ -151,8 +150,14 @@ public class FieldManager extends Process {
 
         if(telemetry != null) {
             // Temporary, write out positions:
+            telemetry.addData("p X:", fieldBall.getX());
+            telemetry.addData("p Y:", fieldBall.getY());
             telemetry.addData("Ball X:", fieldBall.realX);
             telemetry.addData("Ball Y:", fieldBall.realY);
+            telemetry.addData("t", t);
+            telemetry.addData("planeY", camPlaneY);
+            telemetry.addData("planeX", camPlaneX);
+            telemetry.addData("pitch", pitch);
         }
     }
 

@@ -11,7 +11,7 @@ public class BallIO {
         this.shooter = shooter;
         this.maxF = maxF;
 
-        shooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         shooter.setPower(0.0);
        shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
