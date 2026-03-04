@@ -125,13 +125,22 @@ public class BlueAutonomous extends OpMode {
         camSwivel.setPosition(0.4);
         fieldManager.updateCamInfo(25, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
 
-        // TODO: Go to Shooting path first for preload; I'm skipping since I just want to scout balls right now
-        /*PathChain scout1 = follower.pathBuilder().addPath(new BezierLine(
+        PathChain shootPath = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathBlue.shootX, pedroPathBlue.shootY)
+        )).setLinearHeadingInterpolation(180, pedroPathBlue.shootDeg).build(); // Start heading is 180deg
+        follower.followPath(shootPath);
+        waitF();
+        shooterManager.startShooting();
+        while (shooterManager.isActive()); // This might spike CPU usage :(
+
+        // 1
+        PathChain scout1 = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
                 new Pose(pedroPathBlue.scout1X, pedroPathBlue.scout1Y)
         )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.scout1Deg).build();
         follower.followPath(scout1);
-        waitF();*/
+        waitF();
 
         //ArrayList<FieldBall> a = new ArrayList<>();
         //a.add(new FieldBall(0, 0, 30, 20));
@@ -171,31 +180,117 @@ public class BlueAutonomous extends OpMode {
         waitF();
         intakeManager.stopIntaking();
 
-        /*
-        pickupArtifacts(newPath);
+        follower.setMaxPower(1.0);
+        shootPath = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathBlue.shootX, pedroPathBlue.shootY)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.shootDeg).build();
+        follower.followPath(shootPath);
+        waitF();
+        shooterManager.startShooting();
+        while (shooterManager.isActive()); // This might spike CPU usage :(
 
-        // Eat the balls
-        // Move to scout 2
-        PathChain scout2 = follower.pathBuilder().addPath(new BezierLine(
+        // 2
+        scout1 = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
                 new Pose(pedroPathBlue.scout2X, pedroPathBlue.scout2Y)
-        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.scout2Deg).build(); // Heading might be fucked
-        follower.followPath(scout2);
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.scout2Deg).build();
+        follower.followPath(scout1);
         waitF();
 
-        // TODO: Implement the scouting routine here as I am not just gonna copy the array list again :angry:
-        // TODO: Pickup artifacts
+        balls = fieldManager.getFieldBalls();
+        do {
+            balls = fieldManager.getFieldBalls();
+        } while (balls.isEmpty() || balls.get(0).getColor() != BallColor.GREEN);
+        closest = mapToField(closestToOrigin(balls)); // Unless something goes really wrong, this should always be on our side
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(closest.getX(), follower.getPose().getY())
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .build();
+        follower.followPath(newPath);
+        waitF();
+        intakeManager.startIntaking();
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(follower.getPose().getX(), closest.getY() - 20)
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .build();
+        follower.setMaxPower(0.3);
+        follower.followPath(newPath);
+        waitF();
+        intakeManager.stopIntaking();
 
-        // Eat the balls (Pt. 2)
-        PathChain scout3 = follower.pathBuilder().addPath(new BezierLine(
-                        new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                        new Pose(pedroPathBlue.scout3X, pedroPathBlue.scout3Y)
-                )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.scout3Deg).build(); // Heading might be fucked
-                follower.followPath(scout3);
-                waitF();
+        follower.setMaxPower(1.0);
+        shootPath = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathBlue.shootX, pedroPathBlue.shootY)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.shootDeg).build();
+        follower.followPath(shootPath);
+        waitF();
+        shooterManager.startShooting();
+        while (shooterManager.isActive()); // This might spike CPU usage :(
 
-        // TODO: Implement the scouting routine here as I am not just gonna copy the array list again :angry:
-        // TODO: Pickup artifacts*/
+        // 3
+        scout1 = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathBlue.scout3X, pedroPathBlue.scout3Y)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.scout3Deg).build();
+        follower.followPath(scout1);
+        waitF();
+
+        balls = fieldManager.getFieldBalls();
+        do {
+            balls = fieldManager.getFieldBalls();
+        } while (balls.isEmpty() || balls.get(0).getColor() != BallColor.GREEN);
+        closest = mapToField(closestToOrigin(balls)); // Unless something goes really wrong, this should always be on our side
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(closest.getX(), follower.getPose().getY())
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .build();
+        follower.followPath(newPath);
+        waitF();
+        intakeManager.startIntaking();
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(follower.getPose().getX(), closest.getY() - 20)
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .build();
+        follower.setMaxPower(0.3);
+        follower.followPath(newPath);
+        waitF();
+        intakeManager.stopIntaking();
+
+        follower.setMaxPower(1.0);
+        shootPath = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathBlue.shootX, pedroPathBlue.shootY)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathBlue.shootDeg).build();
+        follower.followPath(shootPath);
+        waitF();
+        shooterManager.startShooting();
+        while (shooterManager.isActive()); // This might spike CPU usage :(
     }
 
     @Override

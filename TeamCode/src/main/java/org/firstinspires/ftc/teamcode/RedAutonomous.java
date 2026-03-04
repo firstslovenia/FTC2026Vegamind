@@ -1,26 +1,32 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.auto.Constants;
+import org.firstinspires.ftc.teamcode.color.BallColor;
 import org.firstinspires.ftc.teamcode.drive.Drive;
 import org.firstinspires.ftc.teamcode.input.PrimaryMap;
 import org.firstinspires.ftc.teamcode.input.SecondaryMap;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
+import org.firstinspires.ftc.teamcode.manager.FieldBall;
+import org.firstinspires.ftc.teamcode.manager.FieldManager;
+import org.firstinspires.ftc.teamcode.manager.IntakeManager;
 import org.firstinspires.ftc.teamcode.manager.ShooterManager;
 import org.firstinspires.ftc.teamcode.pathing.PedroPathRed;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
+import org.firstinspires.ftc.teamcode.util.MapPoint;
+
+import java.util.List;
 
 @Autonomous(name="Red Autonomous", group="FTC 26")
 public class RedAutonomous extends OpMode {
@@ -34,7 +40,9 @@ public class RedAutonomous extends OpMode {
     Drive drive;
     Follower follower;
     ShooterManager shooterManager;
-    PedroPathRed pedroPathEx;
+    PedroPathRed pedroPathRed;
+    FieldManager fieldManager;
+    IntakeManager intakeManager;Servo camSwivel;
 
 
     double targetHeading = 0;
@@ -54,9 +62,14 @@ public class RedAutonomous extends OpMode {
         shooterManager = new ShooterManager(magazine, shooter, 23, 100);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
-        pedroPathEx = new PedroPathRed(follower);
+        pedroPathRed = new PedroPathRed(follower);
+        camSwivel =  hardwareMap.get(Servo.class, "camSwivel");
+        camSwivel.setPosition(0.0);
         follower.setPose(new Pose(110, 135));
+        follower.update();
     }
+
+    MapPoint closest;
 
     void waitF() {
         while (follower.isBusy()) {
@@ -64,73 +77,246 @@ public class RedAutonomous extends OpMode {
         }
     }
 
+    FieldBall closestToOrigin(List<FieldBall> struct) {
+        if (struct == null || struct.isEmpty()) { return null; }
+
+        FieldBall closest = struct.get(0);
+
+        double minDistanceSquared = Math.pow(closest.getRealX(), 2) + Math.pow(closest.getRealY(), 2);
+        for (FieldBall ball : struct) {
+            double distSqrd = Math.pow(ball.getRealX(), 2) + Math.pow(ball.getRealY(), 2);
+            if (distSqrd < minDistanceSquared) {
+                minDistanceSquared = distSqrd;
+                closest = ball;
+            }
+        }
+
+        return closest;
+    }
+
+    MapPoint mapToField(FieldBall target) {
+        double toX = follower.getPose().getX() - target.getRealY() / 2.54;
+        double toY = follower.getPose().getY() - target.getRealX() / 2.54;
+
+        return new MapPoint(toX, toY, follower.getHeading(), follower.getHeading() - 3.14 / 2); // Heading is in radians
+    }
+
+
     @Override
     public void start() {
-        // Sequence; TODO: Make it more readable
-        follower.followPath(pedroPathEx.Path1);
+        camSwivel.setPosition(0.4);
+        fieldManager.updateCamInfo(25, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
+
+        PathChain shootPath = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathRed.shootX, pedroPathRed.shootY)
+        )).setLinearHeadingInterpolation(0, pedroPathRed.shootDeg).build(); // Start heading is 0deg
+        follower.followPath(shootPath);
         waitF();
-        // shoot
-        shooterManager.start();
-        while(shooterManager.isActive()) {
-        }        follower.followPath(pedroPathEx.Path2);
+        shooterManager.startShooting();
+        while (shooterManager.isActive()); // This might spike CPU usage :(
+
+        // 1
+        PathChain scout1 = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathRed.scout1X, pedroPathRed.scout1Y)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.scout1Deg).build();
+        follower.followPath(scout1);
         waitF();
-        intake.windup();
-        follower.followPath(pedroPathEx.Path3);
+
+        PathChain newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(pedroPathRed.hardcode1X, pedroPathRed.hardcode1Y)
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.hardcode1Deg) // Rotate towards balls
+                .build();
+        follower.followPath(newPath);
         waitF();
-        // eat the ball
-        follower.followPath(pedroPathEx.Path4);
+        intakeManager.startIntaking();
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(follower.getPose().getX(), closest.getY() + 20)
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .build();
+        follower.setMaxPower(0.3);
+        follower.followPath(newPath);
         waitF();
-        // eat the ball
-        follower.followPath(pedroPathEx.Path5);
+        intakeManager.stopIntaking();
+
+        follower.setMaxPower(1.0);
+        shootPath = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathRed.shootX, pedroPathRed.shootY)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.shootDeg).build();
+        follower.followPath(shootPath);
         waitF();
-        intake.winddown();
-        follower.followPath(pedroPathEx.Path6);
+        shooterManager.startShooting();
+        while (shooterManager.isActive()); // This might spike CPU usage :(
+
+        /*
+
+
+        //ArrayList<FieldBall> a = new ArrayList<>();
+        //a.add(new FieldBall(0, 0, 30, 20));
+        //FieldStruct struct = new FieldStruct(a, BallColor.GREEN);
+        // Some random value for the pitch
+        BallColor color;
+        List<FieldBall> balls = fieldManager.getFieldBalls();
+        do {
+            balls = fieldManager.getFieldBalls();
+        } while (balls.isEmpty() || balls.get(0).getColor() != BallColor.GREEN);
+        closest = mapToField(closestToOrigin(balls)); // Unless something goes really wrong, this should always be on our side
+        PathChain newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(closest.getX(), follower.getPose().getY())
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .build();
+        follower.followPath(newPath);
         waitF();
-        // shoot
-        shooterManager.start();
-        while(shooterManager.isActive()) {
-            telemetry.update();
-        }
-        follower.followPath(pedroPathEx.Path7);
+        intakeManager.startIntaking();
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(follower.getPose().getX(), closest.getY() + 20)
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .build();
+        follower.setMaxPower(0.3);
+        follower.followPath(newPath);
         waitF();
-        intake.windup();
-        follower.followPath(pedroPathEx.Path8);
+        intakeManager.stopIntaking();
+
+        follower.setMaxPower(1.0);
+        shootPath = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathRed.shootX, pedroPathRed.shootY)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.shootDeg).build();
+        follower.followPath(shootPath);
         waitF();
-        // eat the ball
-        follower.followPath(pedroPathEx.Path9);
+        shooterManager.startShooting();
+        while (shooterManager.isActive()); // This might spike CPU usage :(
+
+        // 2
+        scout1 = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathRed.scout2X, pedroPathRed.scout2Y)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.scout2Deg).build();
+        follower.followPath(scout1);
         waitF();
-        // eat the ball
-        follower.followPath(pedroPathEx.Path10);
+
+        balls = fieldManager.getFieldBalls();
+        do {
+            balls = fieldManager.getFieldBalls();
+        } while (balls.isEmpty() || balls.get(0).getColor() != BallColor.GREEN);
+        closest = mapToField(closestToOrigin(balls)); // Unless something goes really wrong, this should always be on our side
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(closest.getX(), follower.getPose().getY())
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .build();
+        follower.followPath(newPath);
         waitF();
-        intake.winddown();
-        follower.followPath(pedroPathEx.Path11);
+        intakeManager.startIntaking();
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(follower.getPose().getX(), closest.getY() + 20)
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .build();
+        follower.setMaxPower(0.3);
+        follower.followPath(newPath);
         waitF();
-        // shoot
-        shooterManager.start();
-        while(shooterManager.isActive()) {
-            telemetry.update();
-        }
-        follower.followPath(pedroPathEx.Path12);
+        intakeManager.stopIntaking();
+
+        follower.setMaxPower(1.0);
+        shootPath = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathRed.shootX, pedroPathRed.shootY)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.shootDeg).build();
+        follower.followPath(shootPath);
         waitF();
-        intake.windup();
-        follower.followPath(pedroPathEx.Path13);
+        shooterManager.startShooting();
+        while (shooterManager.isActive()); // This might spike CPU usage :(
+
+        // 3
+        scout1 = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathRed.scout3X, pedroPathRed.scout3Y)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.scout3Deg).build();
+        follower.followPath(scout1);
         waitF();
-        // eat the ball
-        follower.followPath(pedroPathEx.Path14);
+
+        balls = fieldManager.getFieldBalls();
+        do {
+            balls = fieldManager.getFieldBalls();
+        } while (balls.isEmpty() || balls.get(0).getColor() != BallColor.GREEN);
+        closest = mapToField(closestToOrigin(balls)); // Unless something goes really wrong, this should always be on our side
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(closest.getX(), follower.getPose().getY())
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .build();
+        follower.followPath(newPath);
         waitF();
-        // eat the ball
-        follower.followPath(pedroPathEx.Path15);
+        intakeManager.startIntaking();
+        newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(follower.getPose().getX(), closest.getY() + 20)
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), closest.getToHeading()) // Rotate towards balls
+                .build();
+        follower.setMaxPower(0.3);
+        follower.followPath(newPath);
         waitF();
-        intake.winddown();
-        follower.followPath(pedroPathEx.Path16);
+        intakeManager.stopIntaking();
+
+        follower.setMaxPower(1.0);
+        shootPath = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathRed.shootX, pedroPathRed.shootY)
+        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.shootDeg).build();
+        follower.followPath(shootPath);
         waitF();
-        // shoot
-        shooterManager.start();
-        while(shooterManager.isActive()) {
-            telemetry.update();
-        }        // Go to center
-        follower.followPath(pedroPathEx.Path17);
-        waitF();
+        shooterManager.startShooting();
+        while (shooterManager.isActive()); // This might spike CPU usage :(
+
+
+         */
     }
 
     @Override

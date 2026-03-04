@@ -17,15 +17,15 @@ public class PedroPathBlue {
     public double shootDeg, scout1Deg, scout2Deg, scout3Deg;
 
     public PedroPathBlue(Follower follower) {
-        shootX = 57.5; shootY = 110.250;
-        scout1X = 57.5; scout1Y = 103.750;
-        scout2X = 57.5; scout2Y = 80.0;
-        scout3X = 57.5; scout3Y = 50.0;
+        shootX = 60.5; shootY = 102.425;
+        scout1X = 45; scout1Y = 110;
+        scout2X = 45; scout2Y = 90;
+        scout3X = 45; scout3Y = 66;
 
-        shootDeg = Math.toRadians(145);
-        scout1Deg = Math.toRadians(90);
-        scout2Deg = Math.toRadians(90);
-        scout3Deg = Math.toRadians(90);
+        shootDeg = Math.toRadians(135);
+        scout1Deg = Math.toRadians(270);
+        scout2Deg = Math.toRadians(270);
+        scout3Deg = Math.toRadians(270);
 
         /*PathShoot = follower.pathBuilder()
                 .addPath(
