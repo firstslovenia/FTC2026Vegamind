@@ -20,6 +20,6 @@ public class PrimaryMap extends InputMap{
 
     @Override
     public double rotateX() {
-        return (gamepad.right_bumper ? 1 : 0) - (gamepad.left_bumper ? 1 : 0);
+        return gamepad.right_trigger - gamepad.left_trigger;
     }
 }

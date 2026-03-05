@@ -8,15 +8,13 @@ import org.firstinspires.ftc.teamcode.magazine.Magazine;
 import org.firstinspires.ftc.teamcode.process.Process;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 
-import java.util.concurrent.TimeUnit;
-
-import kotlin.Pair;
 import lombok.Getter;
+import lombok.Setter;
 
 public class ShooterManager extends Process {
 
     enum State {
-        INACTIVE,
+        IDLE,
         BALL_SELECT,
         WINDUP,
         SHOOT,
@@ -30,9 +28,12 @@ public class ShooterManager extends Process {
 
     boolean isWindingUp = false;
     int shotsLeft = 0;
-    double targetP = 0.0;
+    double targetP = 1.0;
 
-    State currState = State.INACTIVE;
+    @Setter
+    int slotOffset;
+
+    State currState = State.IDLE;
 
     ElapsedTime shotTimer = new ElapsedTime();
     ElapsedTime windupTimer = new ElapsedTime();
@@ -61,12 +62,12 @@ public class ShooterManager extends Process {
         this.magazine = magazine;
         this.shooter = shooter;
         this.shooterServo = shooterServo;
-        currState = State.INACTIVE;
+        currState = State.IDLE;
         shooterServo.setPosition(0);
     }
 
     public boolean isActive() {
-        return currState != State.INACTIVE;
+        return currState != State.IDLE;
     }
 
     void findOptimalDistance(double dist) {
@@ -81,12 +82,16 @@ public class ShooterManager extends Process {
     }
 
     public boolean startShooting(double dist) {
-        if(currState != State.INACTIVE) return false;
+        if(currState != State.IDLE) return false;
 
         findOptimalDistance(dist);
 
         currState = State.BALL_SELECT;
         shotsLeft=3;
+
+        currSlot = slotOffset;
+        slotOffset = 0;
+
         return true;
     }
 
@@ -126,7 +131,7 @@ public class ShooterManager extends Process {
     void windupState() {
         if (shotsLeft > 0) currState = State.SHOOT;
         else currState = State.WINDDOWN;
-        shooter.windup();
+        shooter.windup(targetP);
         shooterServo.setPosition(1);
         windupTimer = new ElapsedTime();
         windupTimer.reset();
@@ -147,17 +152,18 @@ public class ShooterManager extends Process {
         shotTimer.startTime();
     }
 
-    void windDownState() {
+    void windDownState() throws InterruptedException {
         if(magazine.getMagState() != Magazine.State.IDLE) return;
 
         shooter.winddown();
+        currState = State.IDLE;
+        Thread.sleep(500); // just for safety
         shooterServo.setPosition(0);
 
-        currState = State.INACTIVE;
     }
 
     @Override
-    public synchronized void update() {
+    public synchronized void update() throws InterruptedException {
         /*if(telemetry != null) {
             telemetry.addData("shootmanager ballindex: ", currSlot);
             telemetry.addData("shootmanager shots: ", shotsLeft);
@@ -178,7 +184,7 @@ public class ShooterManager extends Process {
             case WINDDOWN:
                 windDownState();
                 break;
-            case INACTIVE:
+            case IDLE:
                 break;
             default:
                 throw new IllegalStateException();

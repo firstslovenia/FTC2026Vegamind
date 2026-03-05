@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.manager;
 
+import com.qualcomm.robotcore.hardware.Servo;
+
 import org.firstinspires.ftc.teamcode.color.BallColor;
 import org.firstinspires.ftc.teamcode.magazine.Magazine;
 import org.firstinspires.ftc.teamcode.process.Process;
@@ -17,19 +19,23 @@ public class IntakeManager extends Process {
 
     Magazine magazine;
     BallIO intake;
+    Servo intakeGate;
 
     int intakesLeft = 0;
 
     State currState = State.INACTIVE;
 
 
-    public IntakeManager(Magazine magazine, BallIO shooter, long updateInterval) {
+    public IntakeManager(Magazine magazine, BallIO intake, Servo intakeGate, long updateInterval) {
         super(updateInterval);
         //https://ftc-resources.firstinspires.org/ftc/game/manual-10 - page 8
 
         this.magazine = magazine;
-        this.intake = shooter;
+        this.intake = intake;
+        this.intakeGate = intakeGate;
         currState = State.INACTIVE;
+
+        intakeGate.setPosition(0.0);
     }
 
     public boolean isActive() {
@@ -41,11 +47,13 @@ public class IntakeManager extends Process {
 
         currState = State.BALL_SELECT;
         intakesLeft = 3;
+
         return true;
     }
 
     public void stopIntaking() {
         currState = State.WINDDOWN;
+        intakeGate.setPosition(0.0);
     }
 
     public boolean shoot(int shotCount) {
@@ -58,6 +66,8 @@ public class IntakeManager extends Process {
 
     void ballSelectState() {
         if(magazine.getMagState() != Magazine.State.IDLE) return; // wait
+
+        intakeGate.setPosition(0.5);
 
         if (!magazine.setIntake()) {
             stopIntaking();
@@ -100,6 +110,7 @@ public class IntakeManager extends Process {
         if(magazine.getMagState() != Magazine.State.IDLE) return;
 
         intake.winddown();
+        intakeGate.setPosition(0.0);
 
         currState = State.INACTIVE;
     }

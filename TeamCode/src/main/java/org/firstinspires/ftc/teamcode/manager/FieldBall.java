@@ -34,4 +34,7 @@ public class FieldBall {
 
     @Setter
     double realX, realY;
+
+    @Setter
+    double pxw;
 }

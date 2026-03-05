@@ -35,6 +35,7 @@ public class AprilTagDetector {
         builder.addProcessor(processor);
         builder.setCameraResolution(new Size(640, 480));
         builder.setStreamFormat(VisionPortal.StreamFormat.MJPEG); //YUV2?
+        builder.setShowStatsOverlay(true);
         builder.enableLiveView(true);
 
         visionPortal = builder.build();

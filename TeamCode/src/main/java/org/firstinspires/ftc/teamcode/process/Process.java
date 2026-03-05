@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.process;
 
+import org.firstinspires.ftc.teamcode.OpModeState;
+
 public abstract class Process extends Thread {
     Thread thread;
 
@@ -15,7 +17,7 @@ public abstract class Process extends Thread {
 
     @Override
     public void run() {
-        while(shouldRun) {
+        while(shouldRun && OpModeState.isRunning) {
             long waitTime = updateInterval - (System.currentTimeMillis() - lastUpdate);
             if(waitTime > 0) {
                 try {
@@ -25,10 +27,14 @@ public abstract class Process extends Thread {
                 }
             }
 
-            update();
+            try {
+                update();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             lastUpdate = System.currentTimeMillis();
         }
     }
 
-    protected abstract void update();
+    protected abstract void update() throws InterruptedException;
 }

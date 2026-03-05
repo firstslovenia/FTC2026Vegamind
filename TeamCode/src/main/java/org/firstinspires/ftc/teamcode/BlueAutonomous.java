@@ -6,6 +6,7 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -29,7 +30,7 @@ import org.firstinspires.ftc.teamcode.util.MapPoint;
 import java.util.List;
 
 @Autonomous(name="Blue Autonomous", group="FTC 26")
-public class BlueAutonomous extends OpMode {
+public class BlueAutonomous extends LinearOpMode {
 
     ShooterManager shooterManager;
     BallIO shooter;
@@ -52,8 +53,10 @@ public class BlueAutonomous extends OpMode {
 
     //magCam
     Pose prevPose;
+
     @Override
-    public void init() {
+    public void runOpMode() throws InterruptedException {
+        OpModeState.isRunning = true;
 
         primaryMap = new PrimaryMap(gamepad1);
         secondaryMap = new SecondaryMap(gamepad2);
@@ -62,15 +65,16 @@ public class BlueAutonomous extends OpMode {
         shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.REVERSE, 1.0);
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.8);
         shooterManager = new ShooterManager(magazine, shooter, hardwareMap.get(Servo.class, "shooterServo"), 23, 100);
-        intakeManager = new IntakeManager(magazine, intake, 50);
+        intakeManager = new IntakeManager(magazine, intake, hardwareMap.get(Servo.class, "intakeGate"), 50);
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
         pedroPathBlue = new PedroPathBlue(follower);
-        camSwivel =  hardwareMap.get(Servo.class, "camSwivel");
-        camSwivel.setPosition(0.0);
+        camSwivel = hardwareMap.get(Servo.class, "camSwivel");
         follower.setPose(new Pose(34.25, 135.75));
         follower.update();
 
+        while(!isStarted());
+        camSwivel.setPosition(0.0);
 
         fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
                 1280, 720, 0, 70, .35, 200, telemetry);
@@ -78,73 +82,8 @@ public class BlueAutonomous extends OpMode {
         magazine.start();
         shooterManager.start();
         intakeManager.start();
-    }
-    MapPoint closest;
 
-    void waitF() {
-        while (follower.isBusy()) {
-            follower.update();
-        }
-    }
 
-    FieldBall closestToOrigin(List<FieldBall> struct) {
-        if (struct == null || struct.isEmpty()) { return null; }
-
-        FieldBall closest = struct.get(0);
-
-        double minDistanceSquared = Math.pow(closest.getRealX(), 2) + Math.pow(closest.getRealY(), 2);
-        for (FieldBall ball : struct) {
-            double distSqrd = Math.pow(ball.getRealX(), 2) + Math.pow(ball.getRealY(), 2);
-            if (distSqrd < minDistanceSquared) {
-                minDistanceSquared = distSqrd;
-                closest = ball;
-            }
-        }
-
-        return closest;
-    }
-    protected double getBasketDistance() {
-        Pose tPos = new Pose(130, 130);
-
-        return Math.sqrt((
-                Math.pow(follower.getPose().getX() - tPos.getX(), 2) +
-                        Math.pow(follower.getPose().getY() - tPos.getY(), 2)
-        ));
-    }
-
-    void shootSeq() {
-        PathChain shootPath = follower.pathBuilder().addPath(new BezierLine(
-                new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                new Pose(pedroPathBlue.shootX, pedroPathBlue.shootY)
-        )).setLinearHeadingInterpolation(0, pedroPathBlue.shootDeg).build(); // Start heading is 0deg
-        follower.followPath(shootPath);
-        waitF();
-        shooterManager.startShooting(getBasketDistance());
-        while (shooterManager.isActive()); // This might spike CPU usage :(
-    }
-
-    void pickupBalls() {
-        intakeManager.startIntaking();
-        PathChain newPath = follower.pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                                //new Pose(closest.getY(), follower.getPose().getY())
-                                new Pose(follower.getPose().getX() + 30, follower.getPose().getY())
-                        )
-                )
-                .setLinearHeadingInterpolation(follower.getHeading(), follower.getHeading()) // Rotate towards balls
-                .build();
-        follower.setMaxPower(0.2);
-        follower.followPath(newPath);
-        waitF();
-        intakeManager.stopIntaking();
-
-        follower.setMaxPower(1.0);
-    }
-
-    @Override
-    public void loop() {
         camSwivel.setPosition(0.4);
         fieldManager.updateCamInfo(25, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
 
@@ -359,5 +298,78 @@ public class BlueAutonomous extends OpMode {
 
 
          */
+
+        OpModeState.isRunning = false;
     }
+
+    MapPoint closest;
+
+    void waitF() throws InterruptedException {
+        while (follower.isBusy() && !isStopRequested()) {
+            Thread.sleep(5);
+            follower.update();
+        }
+    }
+
+    FieldBall closestToOrigin(List<FieldBall> struct) {
+        if (struct == null || struct.isEmpty()) { return null; }
+
+        FieldBall closest = struct.get(0);
+
+        double minDistanceSquared = Math.pow(closest.getRealX(), 2) + Math.pow(closest.getRealY(), 2);
+        for (FieldBall ball : struct) {
+            double distSqrd = Math.pow(ball.getRealX(), 2) + Math.pow(ball.getRealY(), 2);
+            if (distSqrd < minDistanceSquared) {
+                minDistanceSquared = distSqrd;
+                closest = ball;
+            }
+        }
+
+        return closest;
+    }
+    protected double getBasketDistance() {
+        Pose tPos = new Pose(130, 130);
+
+        return Math.sqrt((
+                Math.pow(follower.getPose().getX() - tPos.getX(), 2) +
+                        Math.pow(follower.getPose().getY() - tPos.getY(), 2)
+        ));
+    }
+
+    void shootSeq() throws InterruptedException {
+        PathChain shootPath = follower.pathBuilder().addPath(new BezierLine(
+                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                new Pose(pedroPathBlue.shootX, pedroPathBlue.shootY)
+        )).setLinearHeadingInterpolation(0, pedroPathBlue.shootDeg).build(); // Start heading is 0deg
+        follower.followPath(shootPath);
+        waitF();
+        shooterManager.startShooting(getBasketDistance());
+        while (shooterManager.isActive() && !isStopRequested()) {
+            Thread.sleep(10);
+        }
+    }
+
+    void pickupBalls() throws InterruptedException {
+        intakeManager.startIntaking();
+        PathChain newPath = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                //new Pose(closest.getY(), follower.getPose().getY())
+                                new Pose(follower.getPose().getX() + 30, follower.getPose().getY())
+                        )
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), follower.getHeading()) // Rotate towards balls
+                .build();
+        follower.setMaxPower(0.2);
+        follower.followPath(newPath);
+        waitF();
+        while(intakeManager.isActive()) {
+            Thread.sleep(10);
+        }
+
+        follower.setMaxPower(1.0);
+
+    }
+
 }

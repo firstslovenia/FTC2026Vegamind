@@ -32,6 +32,8 @@ public class TestTeleop extends OpMode {
     BallIO intake;
     @Override
     public void init() {
+        OpModeState.isRunning = true;
+
 //        color = hardwareMap.get(ColorSensor.class, "colorAlt");
 //        motor = hardwareMap.get(DcMotor.class, "intake");
 //        distance = hardwareMap.get(DistanceSensor.class, "distance");
@@ -40,11 +42,12 @@ public class TestTeleop extends OpMode {
                 null,  hardwareMap.get(WebcamName.class, "magCam"), hardwareMap.get(RevBlinkinLedDriver.class, "light"), 50);
         magazine.start();
 
-        intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.4);
+        intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.8);
         shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.FORWARD, 1.0);
         shooterManager = new ShooterManager(magazine, shooter, hardwareMap.get(Servo.class, "shooterServo"), 23, 100);
-        intakeManager = new IntakeManager(magazine, intake, 100);
+        intakeManager = new IntakeManager(magazine, intake, hardwareMap.get(Servo.class, "intakeGate"), 50);
 
+        magazine.setTelemetry(telemetry);
 
         shooterManager.start();
         intakeManager.start();
@@ -63,7 +66,7 @@ public class TestTeleop extends OpMode {
 //        motor.setPower(gamepad1.left_trigger * 0.3);
 //        magazine.update(telemetry);
 
-        /*if(gamepad1.triangle) {
+        if(gamepad1.triangle) {
             magazine.rotateToBall(0);
         }
         else if(gamepad1.circle) {
@@ -77,16 +80,20 @@ public class TestTeleop extends OpMode {
         }
 
         if(gamepad1.dpad_up) {
-//            shooterManager.startShooting();
+            shooterManager.startShooting(300);
         }
         if(gamepad1.dpad_down)
-            intakeManager.startIntaking();*/
+            intakeManager.startIntaking();
 
         telemetry.addData("s1", magazine.getBallAtSlot(0));
         telemetry.addData("s2", magazine.getBallAtSlot(1));
         telemetry.addData("s3", magazine.getBallAtSlot(2));
 
-        telemetry.update();
+        //telemetry.update();
+    }
 
+    @Override
+    public void stop() {
+        OpModeState.isRunning = false;
     }
 }

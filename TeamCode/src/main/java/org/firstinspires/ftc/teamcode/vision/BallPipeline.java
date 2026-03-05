@@ -103,6 +103,9 @@ public class BallPipeline extends OpenCvPipeline {
             fieldBalls.add(
                     new FieldBall(rect.x + (double) rect.width / 2, rect.y + (double) rect.height / 2, getLastUpdateColor())
             );
+            fieldBalls.get(
+                    fieldBalls.size()-1
+            ).setPxw(rect.width);
         }
     }
 

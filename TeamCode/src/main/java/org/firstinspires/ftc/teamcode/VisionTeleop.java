@@ -27,6 +27,8 @@ public class VisionTeleop extends OpMode {
 
     @Override
     public void init() {
+
+        OpModeState.isRunning = true;
         /*pipeline = new BallPipeline(hardwareMap.get(WebcamName.class, "webcam"), 1280, 720,
                 hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName()));*/
         fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
@@ -41,12 +43,17 @@ public class VisionTeleop extends OpMode {
 
     @Override
     public void loop() {
-//        double pitch = 3.14159 / 2 - camSwivel.getPosition() * 3.14159;
-        double pitch = Math.abs(potentiometer.getVoltage() / potentiometer.getMaxVoltage() - 0.5) * 3.14 / 2;
+        double pitch = 3.14159 / 2 - camSwivel.getPosition() * 3.14159;
+//        double pitch = Math.abs(potentiometer.getVoltage() / potentiometer.getMaxVoltage() - 0.5) * 3.14 / 2;
 
         fieldManager.updateCamInfo(0, 39 - Math.sin(pitch) * 5, pitch);
-        camSwivel.setPosition(camSwivel.getPosition() + gamepad1.left_stick_y * 0.002);
+        camSwivel.setPosition(camSwivel.getPosition() + gamepad1.left_stick_y * 0.001);
         //telemetry.addData("deg", Math.toDegrees(3.14159 / 2 - camSwivel.getPosition() * 3.14159));
         telemetry.update();
+    }
+
+    @Override
+    public void stop() {
+        OpModeState.isRunning = false;
     }
 }

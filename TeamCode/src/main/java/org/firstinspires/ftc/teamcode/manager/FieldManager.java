@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.manager;
 
+import static java.lang.Math.cos;
+
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -45,7 +47,7 @@ public class FieldManager extends Process {
         this.streamHeight = streamHeight;
         this.horFov = fov;
         this.verFov = (streamHeight / streamWidth) * fov;
-        this.focalLengthPx = 978;
+        this.focalLengthPx = (37 * 312) / 12.5;
         this.telemetry = telemetry;
 
         fieldBalls = new ArrayList<>();
@@ -124,22 +126,22 @@ public class FieldManager extends Process {
     }
 
     void computePositions(FieldBall fieldBall) {
-        // Normalize pixel
-        double Xn = (fieldBall.getX() -  636) / focalLengthPx;
-        double Yn = (fieldBall.getY() - 480) / focalLengthPx;
 
-        // Apply pitch rotation
-        double ry = Yn * Math.cos(pitch) - Math.sin(pitch); // In radians
-        double rz = Yn * Math.sin(pitch) + Math.cos(pitch); // In radians
+        double t = (12.5 * focalLengthPx) / fieldBall.getPxw();
 
-        // Solve for intersection with ground
-        double t = -(this.camPlaneY / rz); // camOffsetY is camera height (any unit - will match output)
+        t = Math.max(t, camPlaneY);
+
 
         // Final coordinates
-        fieldBall.realX = t * Xn;
-        fieldBall.realY = t * ry;
+        double ballAngleVer = Math.acos(camPlaneY/t);
+        fieldBall.realY = Math.sin(ballAngleVer) * t + 7.5; //idk if it can be shortened
 
-       if(fieldBall.realY / BALL_SIZE > 0 && fieldBall.realY / BALL_SIZE < GRID_SIZE &&
+        double ballAngleHor = horFov * (fieldBall.realX - 640) / 1280;
+
+        double c = fieldBall.realY / Math.sin(ballAngleHor);
+        fieldBall.realX =  Math.cos(ballAngleHor);
+
+        if(fieldBall.realY / BALL_SIZE > 0 && fieldBall.realY / BALL_SIZE < GRID_SIZE &&
         fieldBall.realX / BALL_SIZE > 0 && fieldBall.realX / BALL_SIZE < GRID_SIZE)  {
             fieldGrid
                     .get((int)Math.floor(fieldBall.realY / BALL_SIZE))
@@ -155,6 +157,7 @@ public class FieldManager extends Process {
             telemetry.addData("Ball Y:", fieldBall.realY);
             telemetry.addData("t", t);
             telemetry.addData("pitch", pitch);
+            telemetry.addData("l", pitch);
         }
     }
 

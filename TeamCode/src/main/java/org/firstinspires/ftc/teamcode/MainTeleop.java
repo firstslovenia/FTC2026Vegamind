@@ -5,6 +5,7 @@ package org.firstinspires.ftc.teamcode;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -85,10 +86,35 @@ public class MainTeleop extends OpMode {
         ));
     }
 
+    void pickupSequence() {
+        final double pickupLength = 20;
+        final double pickupSpeed = 0.2;
+
+        PathChain pathChain = follower.pathBuilder()
+                .addPath(
+                        new Path(
+                                new BezierLine(
+                                        follower.getPose(),
+                                        new Pose(
+                                                follower.getPose().getX() + Math.cos(follower.getHeading()) * pickupLength, // the lion does not bother himself with normalization
+                                                follower.getPose().getY() + Math.sin(follower.getHeading()) * pickupLength)
+                                )
+                        )
+                ).build();
+
+            follower.setMaxPower(pickupSpeed);
+            follower.followPath(pathChain);
+            while(follower.isBusy()) follower.update();
+            follower.setMaxPower(1.0);
+            follower.startTeleOpDrive(true);
+            follower.update();
+    }
+
     Pose prevPose;
     @Override
     public void init() {
 
+        OpModeState.isRunning = true;
         primaryMap = new PrimaryMap(gamepad1);
         secondaryMap = new SecondaryMap(gamepad2);
         magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), null,
@@ -97,7 +123,7 @@ public class MainTeleop extends OpMode {
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.4);
         shooterManager = new ShooterManager(magazine, shooter, hardwareMap.get(Servo.class, "shooterServo"), 23, 100);
         follower = Constants.createFollower(hardwareMap);
-        intakeManager = new IntakeManager(magazine, intake, 50);
+        intakeManager = new IntakeManager(magazine, intake, hardwareMap.get(Servo.class, "intakeGate"), 50);
 
         drive = new Drive(follower, new Pose());
 
@@ -128,8 +154,17 @@ public class MainTeleop extends OpMode {
             isShooting = !isShooting;
         }
 
-        if (gamepad1.right_trigger > 0.5) {
+        if (gamepad1.right_bumper) {
             turnTowardBasket(alliance);
+        }
+
+        if (gamepad1.dpad_down) {
+            pickupSequence();
+        }
+
+        if (gamepad1.dpad_down) {
+            turnTowardBasket(alliance);
+            shooterManager.startShooting(getBasketDistance());
         }
 
         /*if(secondaryMap.startShooting())
@@ -148,6 +183,10 @@ public class MainTeleop extends OpMode {
 
 
         drive.drive(primaryMap.driveX(), primaryMap.driveY(), primaryMap.rotateX());
+    }
+    @Override
+    public void stop() {
+        OpModeState.isRunning = false;
     }
 }
 

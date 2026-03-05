@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.color.BallColor;
 import org.firstinspires.ftc.teamcode.pid.MiniPID;
@@ -13,13 +14,14 @@ import org.firstinspires.ftc.teamcode.process.Process;
 import org.firstinspires.ftc.teamcode.vision.MagazineCamPipeline;
 
 import lombok.Getter;
+import lombok.Setter;
 
 public class Magazine extends Process {
     DcMotor magazineMotor;
 
     Servo helpServo;
     ElapsedTime servoCycleTimer;
-    double servoCycleTime = 300; //adjust, just to be safe for now
+    double servoCycleTime = 400; //adjust, just to be safe for now
 
     TouchSensor intakeSensor;
     TouchSensor outtakeSensor;
@@ -55,6 +57,10 @@ public class Magazine extends Process {
 
     MagazineCamPipeline pipeline;
 
+    @Setter
+    Telemetry telemetry;//debugging TODO remove
+    double lastUpdate;
+
     public Magazine(DcMotor magazineMotor, Servo helpServo, TouchSensor intakeSensor, TouchSensor outtakeSensor, WebcamName webcamName, RevBlinkinLedDriver light,
                      long updateInterval) {
         super(updateInterval);
@@ -62,6 +68,8 @@ public class Magazine extends Process {
         this.helpServo = helpServo;
         this.intakeSensor = intakeSensor;
         this.outtakeSensor = outtakeSensor;
+
+        lastUpdate = 0;
 
         magazineMotor.setPower(0.0);
         magazineMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -72,7 +80,7 @@ public class Magazine extends Process {
 
         servoCycleTimer = new ElapsedTime();
 
-        pid = new MiniPID(0.0003, 0.00002, 0.00125);
+        pid = new MiniPID(0.0004, 0.00002, 0.003);
         magState = State.IDLE;
         currIndex = 0;
         helpServo.setPosition(1.0);
@@ -138,16 +146,12 @@ public class Magazine extends Process {
 
     @Override
     public synchronized void update() {
-        /*if(telemetry != null) {
-            telemetry.addData("curr mag pos:", magazineMotor.getCurrentPosition());
-            telemetry.addData("target mag pos:", motorPositions[currIndex]);
-            telemetry.addData("target outtake:", isOuttakeTarget);
-            telemetry.addData("curr state", state);
-            telemetry.addData("currIndex", currIndex);
-            telemetry.addData("mag slot 1:", slotColors[0]);
-            telemetry.addData("mag slot 2:", slotColors[1]);
-            telemetry.addData("mag slot 3:", slotColors[2]);
-        }*/
+        if(telemetry != null) {
+            telemetry.addData("since last mag update", System.currentTimeMillis() - lastUpdate);
+            lastUpdate = System.currentTimeMillis();
+            telemetry.update();
+        }
+
         double pos = -magazineMotor.getCurrentPosition();
         if(currIndex != -1) {
             double p = pid.getOutput(pos, motorPositions[currIndex]);
@@ -158,7 +162,7 @@ public class Magazine extends Process {
             case IDLE:
                 break;
             case ROTATE:
-                if(approxEq(pos, motorPositions[currIndex], 70) && approxEq(lastEncoderPos, pos, 15)) {
+                if(approxEq(pos, motorPositions[currIndex], 30) && approxEq(lastEncoderPos, pos, 30)) {
                     //magState = State.DEPOSIT;
                     magState = State.IDLE;
                 }
@@ -170,7 +174,7 @@ public class Magazine extends Process {
                     break;
                 }
                 magazineMotor.setPower(0.0f);
-                helpServo.setPosition(0.4);
+                helpServo.setPosition(0.0);
                 try {
                     Thread.sleep((long)servoCycleTime); // abs waiting time where NOTHING SHOULD HAPPEN
                 } catch (InterruptedException e) {
@@ -193,7 +197,7 @@ public class Magazine extends Process {
 
     public synchronized void updateColorData() {
         if(currIndex < 3) throw new RuntimeException("Tried updating color data while at invalid position " + Integer.toString(currIndex));
-        if(!approxEq(-magazineMotor.getCurrentPosition(), motorPositions[currIndex], 1365)) return;
+        if(!approxEq(-magazineMotor.getCurrentPosition(), motorPositions[currIndex], 500)) return;
         slotColors[currIndex-3] = pipeline.getCurrentColor();
     }
 
