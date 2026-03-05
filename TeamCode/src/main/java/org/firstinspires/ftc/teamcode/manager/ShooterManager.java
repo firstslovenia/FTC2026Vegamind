@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import kotlin.Pair;
 import lombok.Getter;
+import lombok.Setter;
 
 public class ShooterManager extends Process {
 
@@ -42,6 +43,13 @@ public class ShooterManager extends Process {
     final int windupTime = 1500;
 
     Servo shooterServo;
+    @Getter
+    int tagID;
+
+    public void setTagID(int id) {
+        tagID = id;
+        gPos = id - 21;
+    }
 
     final double[][] powerDistance =
             {
@@ -55,6 +63,7 @@ public class ShooterManager extends Process {
             };
     public ShooterManager(Magazine magazine, BallIO shooter, Servo shooterServo, int tagID, long updateInterval) {
         super(updateInterval);
+        this.tagID = tagID;
         gPos = tagID - 21;
         //https://ftc-resources.firstinspires.org/ftc/game/manual-10 - page 8
 

@@ -25,7 +25,9 @@ import org.firstinspires.ftc.teamcode.manager.ShooterManager;
 import org.firstinspires.ftc.teamcode.pathing.PedroPathRed;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 import org.firstinspires.ftc.teamcode.util.MapPoint;
+import org.firstinspires.ftc.teamcode.vision.AprilTagDetector;
 
+import java.io.RandomAccessFile;
 import java.util.List;
 
 @Autonomous(name="Red Autonomous", group="FTC 26")
@@ -64,8 +66,8 @@ public class RedAutonomous extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         drive = new Drive(follower, new Pose());
         pedroPathRed = new PedroPathRed(follower);
-        fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
-                1280, 720, 0, 0, .35, 200, telemetry);
+        //fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
+        //        1280, 720, 0, 0, .35, 200, telemetry);
         camSwivel =  hardwareMap.get(Servo.class, "camSwivel");
 
         //fieldManager.start();
@@ -75,6 +77,49 @@ public class RedAutonomous extends OpMode {
         follower.setPose(new Pose(110, 135));
         follower.update();
         intakeManager.start();
+
+        new Thread(() -> {
+            try (RandomAccessFile raf = new RandomAccessFile("/storage/self/primary/data.bin", "rw")) {
+                while (true) {
+                    // wipe file
+                    raf.setLength(0);
+                    // reset pointer to start
+                    raf.seek(0);
+                    // write new content
+                    raf.writeDouble(follower.getPose().getX());
+                    raf.writeDouble(follower.getPose().getY());
+                    raf.writeDouble(follower.getHeading());
+                    raf.writeInt(shooterManager.getTagID());
+
+                    // ensure it's written
+                    raf.getFD().sync();
+
+                    Thread.sleep(100);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+        new Thread(() -> {
+            AprilTagDetector detector = new AprilTagDetector(hardwareMap.get(WebcamName.class, "webcam"));
+            detector.start();
+
+            while (true) {
+                int id = detector.readObelisk();
+                if (id != -1) {
+                    shooterManager.setTagID(id);
+                    telemetry.addLine("Read april tag!");
+                    telemetry.update();
+                    break;
+                }
+            }
+
+            detector.stop();
+            //fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
+            //        1280, 720, 0, 0, .35, 200, telemetry);
+        }).start();
     }
 
     MapPoint closest;
@@ -118,7 +163,7 @@ public class RedAutonomous extends OpMode {
         ));
     }
 
-    void shootSeq() {
+    public void autoShoot() {
         PathChain shootPath = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
                 new Pose(pedroPathRed.shootX, pedroPathRed.shootY)
@@ -129,7 +174,7 @@ public class RedAutonomous extends OpMode {
         while (shooterManager.isActive()); // This might spike CPU usage :(
     }
 
-    void pickupBalls() {
+    public void intakeBalls() {
         intakeManager.startIntaking();
         PathChain newPath = follower.pathBuilder()
                 .addPath(
@@ -145,8 +190,8 @@ public class RedAutonomous extends OpMode {
         follower.followPath(newPath);
         waitF();
         intakeManager.stopIntaking();
-
         follower.setMaxPower(1.0);
+
     }
 
     @Override
@@ -154,15 +199,19 @@ public class RedAutonomous extends OpMode {
         camSwivel.setPosition(0.4);
         fieldManager.updateCamInfo(25, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
 
-        shootSeq();
-
-        PathChain scout1 = follower.pathBuilder().addPath(new BezierLine(
-                new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                new Pose(pedroPathRed.scout1X, pedroPathRed.scout1Y)
-        )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.scout1Deg).build();
-        follower.followPath(scout1);
+        PathChain aprilPath = follower.pathBuilder()
+                        .addPath(
+                                new BezierLine(
+                                        new Pose(follower.getPose().getX(), follower.getPose().getY()),
+                                        new Pose(pedroPathRed.shootX, pedroPathRed.shootY)
+                                )
+                        ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(135)) // 0 untested
+                        .build();
+        follower.followPath(aprilPath);
         waitF();
 
+        autoShoot();
+        // 1
         PathChain newPath = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
@@ -176,10 +225,10 @@ public class RedAutonomous extends OpMode {
         follower.followPath(newPath);
         waitF();
 
-        pickupBalls();
-        shootSeq();
+        intakeBalls();
+        autoShoot();
 
-       newPath = follower.pathBuilder()
+        newPath = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
                                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
@@ -192,8 +241,8 @@ public class RedAutonomous extends OpMode {
         follower.followPath(newPath);
         waitF();
 
-        pickupBalls();
-        shootSeq();
+        intakeBalls();
+        autoShoot();
 
         newPath = follower.pathBuilder()
                 .addPath(
@@ -207,9 +256,11 @@ public class RedAutonomous extends OpMode {
                 .build();
         follower.followPath(newPath);
         waitF();
+        shooterManager.startShooting(getBasketDistance());
+        while (shooterManager.isActive()); // This might spike CPU usage :(
 
-        pickupBalls();
-        shootSeq();
+        intakeBalls();
+        autoShoot();
         /*
 
 
