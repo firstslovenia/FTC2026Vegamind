@@ -153,16 +153,16 @@ public class Magazine extends Process {
         }
 
         double pos = -magazineMotor.getCurrentPosition();
-        if(currIndex != -1) {
+        if(magState != State.IDLE) {
             double p = pid.getOutput(pos, motorPositions[currIndex]);
             magazineMotor.setPower(p);
         }
 
         switch(magState) {
             case IDLE:
-                break;
+                magazineMotor.setPower(0.0);
             case ROTATE:
-                if(approxEq(pos, motorPositions[currIndex], 30) && approxEq(lastEncoderPos, pos, 30)) {
+                if(approxEq(pos, motorPositions[currIndex], 30) && approxEq(lastEncoderPos, pos, 15)) {
                     //magState = State.DEPOSIT;
                     magState = State.IDLE;
                 }

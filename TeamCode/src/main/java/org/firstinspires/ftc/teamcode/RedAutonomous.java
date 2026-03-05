@@ -32,7 +32,7 @@ import java.io.RandomAccessFile;
 import java.util.List;
 
 @Autonomous(name="Red Autonomous", group="FTC 26")
-public class RedAutonomous extends OpMode {
+public class RedAutonomous extends LinearOpMode {
 
     BallIO shooter;
     BallIO intake;
@@ -45,7 +45,8 @@ public class RedAutonomous extends OpMode {
     ShooterManager shooterManager;
     PedroPathRed pedroPathRed;
     FieldManager fieldManager;
-    IntakeManager intakeManager;Servo camSwivel;
+    IntakeManager intakeManager;
+    Servo camSwivel;
 
 
     double targetHeading = 0;
@@ -53,7 +54,6 @@ public class RedAutonomous extends OpMode {
     double basketX, basketY;
 
     Pose prevPose;
-
     @Override
     public void runOpMode() throws InterruptedException {
         try {
@@ -82,13 +82,6 @@ public class RedAutonomous extends OpMode {
             follower.setPose(new Pose(110, 135));
             follower.update();
             intakeManager.start();
-        //fieldManager.start();
-        shooterManager.start();
-        magazine.start();
-        camSwivel.setPosition(0.0);
-        follower.setPose(new Pose(110, 135));
-        follower.update();
-        intakeManager.start();
 
         new Thread(() -> {
             try (RandomAccessFile raf = new RandomAccessFile("/storage/self/primary/data.bin", "rw")) {
@@ -114,7 +107,7 @@ public class RedAutonomous extends OpMode {
             }
         }).start();
 
-        new Thread(() -> {
+        new Thread(() -> { //TODO find optimal camera angle
             AprilTagDetector detector = new AprilTagDetector(hardwareMap.get(WebcamName.class, "webcam"));
             detector.start();
 
@@ -132,63 +125,17 @@ public class RedAutonomous extends OpMode {
             //fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
             //        1280, 720, 0, 0, .35, 200, telemetry);
         }).start();
-    }
 
-    MapPoint closest;
+            waitForStart();
+           // magazine.resetSlot(0);
+           // magazine.resetSlot(1);
+           // magazine.resetSlot(2);
 
-    void waitF() {
-        while (follower.isBusy()) {
-            follower.update();
-        }
-    }
+           // pickupBalls();
 
-    FieldBall closestToOrigin(List<FieldBall> struct) {
-        if (struct == null || struct.isEmpty()) { return null; }
-
-        FieldBall closest = struct.get(0);
-
-        double minDistanceSquared = Math.pow(closest.getRealX(), 2) + Math.pow(closest.getRealY(), 2);
-        for (FieldBall ball : struct) {
-            double distSqrd = Math.pow(ball.getRealX(), 2) + Math.pow(ball.getRealY(), 2);
-            if (distSqrd < minDistanceSquared) {
-                minDistanceSquared = distSqrd;
-                closest = ball;
-            }
-        }
-
-        return closest;
-    }
-
-    MapPoint mapToField(FieldBall target) {
-        double toX = follower.getPose().getX() - target.getRealY() / 2.54;
-        double toY = follower.getPose().getY() - target.getRealX() / 2.54;
-
-        return new MapPoint(toX, toY, follower.getHeading(), follower.getHeading() - 3.14 / 2); // Heading is in radians
-    }
-
-    protected double getBasketDistance() {
-        Pose tPos = new Pose(130, 130);
-
-        return Math.sqrt((
-                Math.pow(follower.getPose().getX() - tPos.getX(), 2) +
-                        Math.pow(follower.getPose().getY() - tPos.getY(), 2)
-        ));
-    }
-
-            while (!isStarted()) ;
-            camSwivel.setPosition(0.0);
-
-            camSwivel.setPosition(0.4);
             //fieldManager.updateCamInfo(25, 35, 3.14159 / 2 - camSwivel.getPosition() * 3.14159);
 
             shootSeq();
-
-            PathChain scout1 = follower.pathBuilder().addPath(new BezierLine(
-                    new Pose(follower.getPose().getX(), follower.getPose().getY()),
-                    new Pose(pedroPathRed.scout1X, pedroPathRed.scout1Y)
-            )).setLinearHeadingInterpolation(follower.getHeading(), pedroPathRed.scout1Deg).build();
-            follower.followPath(scout1);
-            waitF();
 
             PathChain newPath = follower.pathBuilder()
                     .addPath(
@@ -235,8 +182,8 @@ public class RedAutonomous extends OpMode {
             follower.followPath(newPath);
             waitF();
 
-            pickupBalls();
-            shootSeq();
+        pickupBalls();
+        shootSeq();
         /*
 
 
@@ -440,14 +387,15 @@ public class RedAutonomous extends OpMode {
         return Math.sqrt((
                 Math.pow(follower.getPose().getX() - tPos.getX(), 2) +
                         Math.pow(follower.getPose().getY() - tPos.getY(), 2)
-        ));
+        )) * 2.54;
     }
 
     void shootSeq() throws InterruptedException {
+        Pose tPos = new Pose(130, 130); // TODO CHANGE FOR BLUE
         PathChain shootPath = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
                 new Pose(pedroPathRed.shootX, pedroPathRed.shootY)
-        )).setLinearHeadingInterpolation(0, pedroPathRed.shootDeg).build(); // Start heading is 0deg
+        )).setLinearHeadingInterpolation(0, Math.atan2(tPos.getY() - follower.getPose().getY(), tPos.getX() - follower.getPose().getX())).build(); // Start heading is 0deg
         follower.followPath(shootPath);
         waitF();
         shooterManager.startShooting(getBasketDistance());
@@ -455,25 +403,38 @@ public class RedAutonomous extends OpMode {
             Thread.sleep(10);
         }
     }
-
-    void pickupBalls() throws InterruptedException {
-        intakeManager.startIntaking();
-        PathChain newPath = follower.pathBuilder()
+    PathChain getPickupPath() {
+        return follower.pathBuilder()
                 .addPath(
                         new BezierLine(
                                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
                                 //new Pose(closest.getY(), follower.getPose().getY())
-                                new Pose(follower.getPose().getX() + 30, follower.getPose().getY())
+                                new Pose(follower.getPose().getX() + 5, follower.getPose().getY())
                         )
                 )
                 .setLinearHeadingInterpolation(follower.getHeading(), follower.getHeading()) // Rotate towards balls
                 .build();
+    }
+
+    void pickupBalls() throws InterruptedException {
+
         follower.setMaxPower(0.2);
-        follower.followPath(newPath);
+
+        intakeManager.intake(1);
+        follower.followPath(getPickupPath());
         waitF();
-        while(intakeManager.isActive()) {
-            Thread.sleep(10);
-        }
+        System.out.println("AUTO 1");
+        while (intakeManager.isActive()) ;
+        intakeManager.intake(1);
+        follower.followPath(getPickupPath());
+        waitF();
+        System.out.println("AUTO 2");
+        while (intakeManager.isActive()) ;
+        intakeManager.intake(1);
+        follower.followPath(getPickupPath());
+        waitF();
+        while (intakeManager.isActive());
+        System.out.println("AUTO 3");
 
         follower.setMaxPower(1.0);
     }

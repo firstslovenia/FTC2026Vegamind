@@ -56,10 +56,10 @@ public class IntakeManager extends Process {
         intakeGate.setPosition(0.0);
     }
 
-    public boolean shoot(int shotCount) {
-        if(currState.ordinal() != State.INTAKE.ordinal() - 1) return false;
+    public boolean intake(int shotCount) {
+        if(isActive()) return false;
 
-        currState = State.INTAKE;
+        currState = State.BALL_SELECT;
         intakesLeft = shotCount;
         return true;
     }

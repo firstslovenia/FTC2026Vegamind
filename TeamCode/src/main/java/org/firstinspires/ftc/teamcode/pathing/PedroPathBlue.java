@@ -19,12 +19,15 @@ public class PedroPathBlue {
     public double hardcode1X, hardcode1Y, hardcode1Deg;
     public double hardcode2X, hardcode2Y, hardcode2Deg;
     public double hardcode3X, hardcode3Y, hardcode3Deg;
+    public double endX, endY;
 
     public PedroPathBlue(Follower follower) {
         shootX = 60.5; shootY = 102.425;
         scout1X = 45; scout1Y = 110;
         scout2X = 45; scout2Y = 90;
         scout3X = 45; scout3Y = 66;
+
+        endX = 72; endY = 100;
 
         shootDeg = Math.toRadians(135);
         scout1Deg = Math.toRadians(270);

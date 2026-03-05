@@ -17,11 +17,15 @@ public class PedroPathRed {
     public double hardcode2X, hardcode2Y, hardcode2Deg;
     public double hardcode3X, hardcode3Y, hardcode3Deg;
 
+    public double endX, endY;
+
     public PedroPathRed(Follower follower) {
         shootX = 83.135; shootY = 102.425;
         scout1X = 100; scout1Y = 110;
         scout2X = 100; scout2Y = 90;
         scout3X = 100; scout3Y = 66;
+
+        endX = 72; endY = 100;
 
         shootDeg = Math.toRadians(35);
         scout1Deg = Math.toRadians(270);

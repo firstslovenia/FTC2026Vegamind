@@ -57,7 +57,7 @@ public class BlueAutonomous extends LinearOpMode {
     Pose prevPose;
     @Override
     public void runOpMode() throws InterruptedException {
-        OpModeState.isRunning = true;
+ /*       OpModeState.isRunning = true;
 
         primaryMap = new PrimaryMap(gamepad1);
         secondaryMap = new SecondaryMap(gamepad2);
@@ -308,7 +308,7 @@ public class BlueAutonomous extends LinearOpMode {
 
          */
     }
-
+/*
     void shootSeq() throws InterruptedException {
         PathChain shootPath = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
@@ -343,6 +343,6 @@ public class BlueAutonomous extends LinearOpMode {
 
         follower.setMaxPower(1.0);
 
-    }
+    }*/
 
 }

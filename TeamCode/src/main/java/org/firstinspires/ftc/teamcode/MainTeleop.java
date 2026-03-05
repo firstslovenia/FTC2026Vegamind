@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode;
 
 //exp  0 magazin
 
+import android.util.Log;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -131,7 +133,7 @@ public class MainTeleop extends OpMode {
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.4);
         shooterManager = new ShooterManager(magazine, shooter, hardwareMap.get(Servo.class, "shooterServo"), 23, 100);
         follower = Constants.createFollower(hardwareMap);
-        intakeManager = new IntakeManager(magazine, intake, 50);
+        intakeManager = new IntakeManager(magazine, intake, hardwareMap.get(Servo.class, "intakeGate"), 50);
 
         drive = new Drive(follower, new Pose());
 
@@ -162,6 +164,7 @@ public class MainTeleop extends OpMode {
             follower.update();
         }
         */
+
     }
 
     @Override
@@ -191,13 +194,23 @@ public class MainTeleop extends OpMode {
             pickupSequence();
         }
 
-        if (gamepad1.dpad_down) {
+        if (gamepad1.dpad_up) {
             turnTowardBasket(alliance);
             shooterManager.startShooting(getBasketDistance());
         }
 
-        if (gamepad1.dpad_down) {
+        if (gamepad1.dpad_left) {
             goToHomeBase();
+        }
+
+        if(gamepad2.dpad_up) {
+            shooterManager.setSlotOffset(0);
+        }
+        else if(gamepad2.dpad_right) {
+            shooterManager.setSlotOffset(1);
+        }
+        else if(gamepad2.dpad_down) {
+            shooterManager.setSlotOffset(2);
         }
 
         /*if(secondaryMap.startShooting())
