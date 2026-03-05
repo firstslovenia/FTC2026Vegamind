@@ -26,11 +26,13 @@ import org.firstinspires.ftc.teamcode.manager.ShooterManager;
 import org.firstinspires.ftc.teamcode.pathing.PedroPathRed;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 import org.firstinspires.ftc.teamcode.util.MapPoint;
+import org.firstinspires.ftc.teamcode.vision.AprilTagDetector;
 
+import java.io.RandomAccessFile;
 import java.util.List;
 
 @Autonomous(name="Red Autonomous", group="FTC 26")
-public class RedAutonomous extends LinearOpMode {
+public class RedAutonomous extends OpMode {
 
     BallIO shooter;
     BallIO intake;
@@ -80,6 +82,98 @@ public class RedAutonomous extends LinearOpMode {
             follower.setPose(new Pose(110, 135));
             follower.update();
             intakeManager.start();
+        //fieldManager.start();
+        shooterManager.start();
+        magazine.start();
+        camSwivel.setPosition(0.0);
+        follower.setPose(new Pose(110, 135));
+        follower.update();
+        intakeManager.start();
+
+        new Thread(() -> {
+            try (RandomAccessFile raf = new RandomAccessFile("/storage/self/primary/data.bin", "rw")) {
+                while (true) {
+                    // wipe file
+                    raf.setLength(0);
+                    // reset pointer to start
+                    raf.seek(0);
+                    // write new content
+                    raf.writeDouble(follower.getPose().getX());
+                    raf.writeDouble(follower.getPose().getY());
+                    raf.writeDouble(follower.getHeading());
+                    raf.writeInt(shooterManager.getTagID());
+
+                    // ensure it's written
+                    raf.getFD().sync();
+
+                    Thread.sleep(100);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+        new Thread(() -> {
+            AprilTagDetector detector = new AprilTagDetector(hardwareMap.get(WebcamName.class, "webcam"));
+            detector.start();
+
+            while (true) {
+                int id = detector.readObelisk();
+                if (id != -1) {
+                    shooterManager.setTagID(id);
+                    telemetry.addLine("Read april tag!");
+                    telemetry.update();
+                    break;
+                }
+            }
+
+            detector.stop();
+            //fieldManager = new FieldManager(hardwareMap, hardwareMap.get(WebcamName.class, "webcam"),
+            //        1280, 720, 0, 0, .35, 200, telemetry);
+        }).start();
+    }
+
+    MapPoint closest;
+
+    void waitF() {
+        while (follower.isBusy()) {
+            follower.update();
+        }
+    }
+
+    FieldBall closestToOrigin(List<FieldBall> struct) {
+        if (struct == null || struct.isEmpty()) { return null; }
+
+        FieldBall closest = struct.get(0);
+
+        double minDistanceSquared = Math.pow(closest.getRealX(), 2) + Math.pow(closest.getRealY(), 2);
+        for (FieldBall ball : struct) {
+            double distSqrd = Math.pow(ball.getRealX(), 2) + Math.pow(ball.getRealY(), 2);
+            if (distSqrd < minDistanceSquared) {
+                minDistanceSquared = distSqrd;
+                closest = ball;
+            }
+        }
+
+        return closest;
+    }
+
+    MapPoint mapToField(FieldBall target) {
+        double toX = follower.getPose().getX() - target.getRealY() / 2.54;
+        double toY = follower.getPose().getY() - target.getRealX() / 2.54;
+
+        return new MapPoint(toX, toY, follower.getHeading(), follower.getHeading() - 3.14 / 2); // Heading is in radians
+    }
+
+    protected double getBasketDistance() {
+        Pose tPos = new Pose(130, 130);
+
+        return Math.sqrt((
+                Math.pow(follower.getPose().getX() - tPos.getX(), 2) +
+                        Math.pow(follower.getPose().getY() - tPos.getY(), 2)
+        ));
+    }
 
             while (!isStarted()) ;
             camSwivel.setPosition(0.0);

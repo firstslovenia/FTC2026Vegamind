@@ -9,6 +9,7 @@ import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -28,6 +29,10 @@ import org.firstinspires.ftc.teamcode.manager.IntakeManager;
 import org.firstinspires.ftc.teamcode.manager.ShooterManager;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 
+import java.io.RandomAccessFile;
+import java.util.Random;
+
+@TeleOp(name="Main TeleOp",group = "FTC 26")
 public class MainTeleop extends OpMode {
 
     BallIO shooter;
@@ -48,6 +53,7 @@ public class MainTeleop extends OpMode {
     double basketX, basketY;
 
     Alliance alliance;
+    int tagID;
 
     Pose getBasketPos() {
         Pose bPos = new Pose(15, 130);
@@ -110,6 +116,8 @@ public class MainTeleop extends OpMode {
             follower.update();
     }
 
+    protected void goToHomeBase() { }
+
     Pose prevPose;
     @Override
     public void init() {
@@ -123,9 +131,30 @@ public class MainTeleop extends OpMode {
         intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.4);
         shooterManager = new ShooterManager(magazine, shooter, hardwareMap.get(Servo.class, "shooterServo"), 23, 100);
         follower = Constants.createFollower(hardwareMap);
-        intakeManager = new IntakeManager(magazine, intake, hardwareMap.get(Servo.class, "intakeGate"), 50);
+        intakeManager = new IntakeManager(magazine, intake, 50);
 
         drive = new Drive(follower, new Pose());
+
+        try (RandomAccessFile raf = new RandomAccessFile("/storage/self/primary/data.bin", "rw")) {
+            raf.seek(0);
+            double x, y, h;
+            x = raf.readDouble();
+            y = raf.readDouble();
+            h = raf.readDouble();
+            follower.setPose(new Pose(x, y, h));
+            tagID = raf.readInt();
+            shooterManager.setTagID(tagID);
+
+            telemetry.addData("X", x);
+            telemetry.addData("Y", y);
+            telemetry.addData("H", h);
+            telemetry.addData("A", tagID);
+            telemetry.update();
+
+        } catch (Exception e) {
+            System.out.println("FUCK");
+            e.printStackTrace();
+        }
 
         /*
         follower.followPath(path);
@@ -154,7 +183,7 @@ public class MainTeleop extends OpMode {
             isShooting = !isShooting;
         }
 
-        if (gamepad1.right_bumper) {
+        if (gamepad1.right_trigger > 0.5) {
             turnTowardBasket(alliance);
         }
 
@@ -165,6 +194,10 @@ public class MainTeleop extends OpMode {
         if (gamepad1.dpad_down) {
             turnTowardBasket(alliance);
             shooterManager.startShooting(getBasketDistance());
+        }
+
+        if (gamepad1.dpad_down) {
+            goToHomeBase();
         }
 
         /*if(secondaryMap.startShooting())
