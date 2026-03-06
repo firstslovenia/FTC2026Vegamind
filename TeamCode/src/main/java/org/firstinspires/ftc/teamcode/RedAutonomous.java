@@ -137,6 +137,7 @@ public class RedAutonomous extends LinearOpMode {
 
             shootSeq();
 
+            /*
             PathChain newPath = follower.pathBuilder()
                     .addPath(
                             new BezierLine(
@@ -395,7 +396,7 @@ public class RedAutonomous extends LinearOpMode {
         PathChain shootPath = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
                 new Pose(pedroPathRed.shootX, pedroPathRed.shootY)
-        )).setLinearHeadingInterpolation(0, Math.atan2(tPos.getY() - follower.getPose().getY(), tPos.getX() - follower.getPose().getX())).build(); // Start heading is 0deg
+        )).setLinearHeadingInterpolation(follower.getHeading(), Math.toRadians(40)).build();
         follower.followPath(shootPath);
         waitF();
         shooterManager.startShooting(getBasketDistance());

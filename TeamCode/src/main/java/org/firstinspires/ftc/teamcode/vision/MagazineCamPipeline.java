@@ -71,8 +71,6 @@ public class MagazineCamPipeline extends OpenCvPipeline {
     }
 
     public synchronized BallColor getCurrentColor() {
-        requestColor = true;
-        while(requestColor);
         return currentColor;
     }
 
@@ -100,9 +98,8 @@ public class MagazineCamPipeline extends OpenCvPipeline {
                     }
                 else {
                         currentColor = BallColor.NONE;
-                        requestColor = false;
-                        return input;
                     }
+        /*
 
                         List<MatOfPoint> contours = new ArrayList<>();
                 Imgproc.findContours(filteredFrame, contours, hierarchy,
@@ -117,10 +114,10 @@ public class MagazineCamPipeline extends OpenCvPipeline {
             }
 
 
-                    currentColor = BallColor.NONE;
+                    +        currentColor = BallColor.NONE;
                    requestColor = false;
 
-
+*/
         return input;
     }
 }

@@ -22,7 +22,7 @@ public class PedroPathBlue {
     public double endX, endY;
 
     public PedroPathBlue(Follower follower) {
-        shootX = 60.5; shootY = 102.425;
+        shootX = 63.75; shootY = 91.87;
         scout1X = 45; scout1Y = 110;
         scout2X = 45; scout2Y = 90;
         scout3X = 45; scout3Y = 66;

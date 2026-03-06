@@ -62,7 +62,7 @@ public class BlueAutonomous extends LinearOpMode {
             magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), null,
                     null, hardwareMap.get(WebcamName.class, "magCam"), hardwareMap.get(RevBlinkinLedDriver.class, "light"), 50);
             intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.7);
-            shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.FORWARD, 1.0);
+            shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter")  , DcMotorSimple.Direction.FORWARD, 1.0);
             shooterManager = new ShooterManager(magazine, shooter, hardwareMap.get(Servo.class, "shooterServo"), 23, 100);
             intakeManager = new IntakeManager(magazine, intake, hardwareMap.get(Servo.class, "intakeGate"), 50);
             follower = Constants.createFollower(hardwareMap);
@@ -77,7 +77,7 @@ public class BlueAutonomous extends LinearOpMode {
             shooterManager.start();
             magazine.start();
             magazine.start();
-            follower.setPose(new Pose(110, 135));
+            follower.setPose(new Pose(35, 135));
             follower.update();
             intakeManager.start();
 
@@ -359,7 +359,7 @@ public class BlueAutonomous extends LinearOpMode {
         PathChain shootPath = follower.pathBuilder().addPath(new BezierLine(
                 new Pose(follower.getPose().getX(), follower.getPose().getY()),
                 new Pose(pedroPathBlue.shootX, pedroPathBlue.shootY)
-        )).setLinearHeadingInterpolation(0, Math.atan2(tPos.getY() - follower.getPose().getY(), tPos.getX() - follower.getPose().getX())).build(); // Start heading is 0deg
+        )).setLinearHeadingInterpolation(follower.getHeading(), Math.toRadians(135)).build(); // Start heading is 0deg
         follower.followPath(shootPath);
         waitF();
         shooterManager.startShooting(getBasketDistance());

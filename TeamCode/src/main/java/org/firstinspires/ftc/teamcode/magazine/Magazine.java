@@ -29,6 +29,8 @@ public class Magazine extends Process {
     @Getter
     int currIndex = -1;
     int outtakePosOffset = -30;
+    @Getter
+    double p;
 
     boolean isOuttakeTarget = false;
 
@@ -74,7 +76,6 @@ public class Magazine extends Process {
 
         lastUpdate = 0;
 
-        if (pidActive)
             magazineMotor.setPower(0.0);
         magazineMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
@@ -87,8 +88,7 @@ public class Magazine extends Process {
         pid = new MiniPID(0.0013, 0.00012, 0.01);
         magState = State.IDLE;
         currIndex = 0;
-        if (pidActive)
-            helpServo.setPosition(1.0);
+        helpServo.setPosition(1.0);
 
         pipeline = new MagazineCamPipeline(webcamName, 640, 480);
 
@@ -106,8 +106,7 @@ public class Magazine extends Process {
 
     boolean goToPosEncoder(int p) {
         if (approxEq(magazineMotor.getCurrentPosition(), p, 2)) {
-            if (pidActive)
-                magazineMotor.setPower(0.0f);
+            magazineMotor.setPower(0.0f);
             return true;
         }
 
@@ -154,18 +153,14 @@ public class Magazine extends Process {
 
     @Override
     public synchronized void update() {
-        if(telemetry != null) {
-        }
-
         double pos = -magazineMotor.getCurrentPosition();
         if(magState != State.IDLE) {
-            double p = pid.getOutput(pos, motorPositions[currIndex]);
+            p = pid.getOutput(pos, motorPositions[currIndex]);
             magazineMotor.setPower(p);
         }
 
         switch(magState) {
             case IDLE:
-                if (pidActive)
                     magazineMotor.setPower(0.0);
             case ROTATE:
                 if(approxEq(pos, motorPositions[currIndex], 30) && approxEq(lastEncoderPos, pos, 15)) {
@@ -179,16 +174,13 @@ public class Magazine extends Process {
                     magState = State.IDLE;
                     break;
                 }
-                if (pidActive) {
                     magazineMotor.setPower(0.0f);
                     helpServo.setPosition(0.0);
-                }
                 try {
                     Thread.sleep((long)servoCycleTime); // abs waiting time where NOTHING SHOULD HAPPEN
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                if (pidActive)
                     helpServo.setPosition(1.0);
                 try {
                     Thread.sleep((long)servoCycleTime); // abs waiting time where NOTHING SHOULD HAPPEN
@@ -212,6 +204,10 @@ public class Magazine extends Process {
 
     synchronized public void resetSlot(int i) {
         slotColors[i] = BallColor.NONE;
+    }
+
+    public State getS() {
+        return magState;
     }
 
     synchronized  int findSlotWithColor(BallColor color) {

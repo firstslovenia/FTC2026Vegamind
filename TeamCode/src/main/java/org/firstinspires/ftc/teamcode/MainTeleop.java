@@ -18,6 +18,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.auto.Constants;
@@ -107,7 +108,8 @@ public class MainTeleop extends OpMode {
             intakeManager.intake(1, true);
             follower.setMaxPower(pickupSpeed);
             follower.followPath(pathChain);
-            while(follower.isBusy()) follower.update();
+            ElapsedTime timeout = new ElapsedTime();
+            while(follower.isBusy() && timeout.milliseconds() < 3000) follower.update();
             intakeManager.stopIntaking();
             follower.setMaxPower(1.0);
             follower.startTeleOpDrive(true);
@@ -171,14 +173,6 @@ public class MainTeleop extends OpMode {
     @Override
     public void loop() {
 
-        if (gamepad2.cross) {
-            if (!isIntaking)
-                intakeManager.startIntaking();
-            else
-                intakeManager.stopIntaking();
-            isIntaking = !isIntaking;
-        }
-
         if (gamepad2.circle) {
             if (!isShooting)
                 shooterManager.startShooting(getBasketDistance());
@@ -194,6 +188,9 @@ public class MainTeleop extends OpMode {
         if (gamepad1.dpad_down) {
             pickupSequence();
         }
+
+        if(gamepad1.right_stick_button)
+            drive.reset();
 
         if (gamepad1.dpad_up) {
             //turnTowardBasket(alliance);

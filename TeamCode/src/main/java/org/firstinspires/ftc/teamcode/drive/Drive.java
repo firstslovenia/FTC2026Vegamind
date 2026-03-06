@@ -25,7 +25,7 @@ public class Drive {
     }
 
     public void reset() {
-        follower.setPose( new Pose());
+        follower.setPose(new Pose());
         follower.update();
     }
 
