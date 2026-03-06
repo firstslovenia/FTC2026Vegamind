@@ -73,7 +73,7 @@ public class BlueAutonomousBot extends LinearOpMode {
         shooterManager.start();
         magazine.start();
         magazine.start();
-        follower.setPose(new Pose(80, 9));
+        follower.setPose(new Pose(80, 9, 3.14));
         follower.update();
         intakeManager.start();
 
@@ -126,13 +126,14 @@ public class BlueAutonomousBot extends LinearOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                new Pose(follower.getPose().getX() + 40, follower.getPose().getY())
+                                new Pose(follower.getPose().getX(), follower.getPose().getY() + 40)
                         )
                 )
+                .setLinearHeadingInterpolation(follower.getHeading(), 3.14/2)
                 .build();
 
         follower.followPath(pathChain);
-        while(follower.isBusy()) {
+        while(follower.isBusy() && !isStopRequested()) {
             follower.update();
         }
 

@@ -435,6 +435,11 @@ public class RedAutonomous extends LinearOpMode {
         waitF();
         while (intakeManager.isActive());
         System.out.println("AUTO 3");
+        intakeManager.intake(1);
+        follower.followPath(getPickupPath());
+        waitF();
+        while (intakeManager.isActive());
+        System.out.println("AUTO 4");
 
         follower.setMaxPower(1.0);
     }

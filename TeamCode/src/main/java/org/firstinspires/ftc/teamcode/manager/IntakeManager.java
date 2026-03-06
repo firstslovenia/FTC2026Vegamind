@@ -22,6 +22,7 @@ public class IntakeManager extends Process {
     Servo intakeGate;
 
     int intakesLeft = 0;
+    boolean manualStop;
 
     State currState = State.INACTIVE;
 
@@ -34,6 +35,7 @@ public class IntakeManager extends Process {
         this.intake = intake;
         this.intakeGate = intakeGate;
         currState = State.INACTIVE;
+        manualStop = false;
 
         intakeGate.setPosition(0.0);
     }
@@ -57,7 +59,14 @@ public class IntakeManager extends Process {
     }
 
     public boolean intake(int shotCount) {
+        return intake(shotCount, false);
+    }
+
+    public boolean intake(int shotCount, boolean manualStop) {
+
         if(isActive()) return false;
+
+        this.manualStop = manualStop;
 
         currState = State.BALL_SELECT;
         intakesLeft = shotCount;
@@ -65,9 +74,9 @@ public class IntakeManager extends Process {
     }
 
     void ballSelectState() {
-        if(magazine.getMagState() != Magazine.State.IDLE) return; // wait
-
         intakeGate.setPosition(0.5);
+        intake.windup();
+        if(magazine.getMagState() != Magazine.State.IDLE) return; // wait
 
         if (!magazine.setIntake()) {
             stopIntaking();
@@ -76,7 +85,6 @@ public class IntakeManager extends Process {
 
         magazine.resetSlot(magazine.getCurrIndex()-3);
         currState = State.INTAKE;
-        intake.windup();
 
         return;
        /*
@@ -103,7 +111,7 @@ public class IntakeManager extends Process {
         currSlot = ++currSlot % 3;
         intakesLeft--;
         if(intakesLeft > 0) currState = State.BALL_SELECT;
-        else currState = State.WINDDOWN;
+        else if(!manualStop) currState = State.WINDDOWN;
     }
 
     void windDownState() {

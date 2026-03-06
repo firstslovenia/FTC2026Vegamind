@@ -68,19 +68,10 @@ public class MainTeleop extends OpMode {
         Pose tPos = getBasketPos();
 
         double heading = Math.atan2(tPos.getY() - follower.getPose().getY(), tPos.getX() - follower.getPose().getX());
-        follower.turnTo(heading);
-        PathChain pathChain = follower.pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower.getPose(),
-                                follower.getPose()
-                        )
-                )
-                .setLinearHeadingInterpolation(follower.getHeading(), heading)
-                .build();
-
-        follower.followPath(pathChain);
-        while(follower.isBusy());
+        follower.turn(heading - follower.getHeading(), true);
+        while(follower.isBusy() && Math.abs(follower.getHeading() - heading) > 0.2) {
+            follower.update();
+        }
         follower.startTeleOpDrive(true);
         follower.update();
     }
@@ -91,7 +82,7 @@ public class MainTeleop extends OpMode {
         return Math.sqrt((
                 Math.pow(follower.getPose().getX() - tPos.getX(), 2) +
                 Math.pow(follower.getPose().getY() - tPos.getY(), 2)
-        ));
+        )) * 2.54;
     }
 
     void pickupSequence() {
@@ -110,9 +101,11 @@ public class MainTeleop extends OpMode {
                         )
                 ).build();
 
+            intakeManager.intake(1, true);
             follower.setMaxPower(pickupSpeed);
             follower.followPath(pathChain);
             while(follower.isBusy()) follower.update();
+            intakeManager.stopIntaking();
             follower.setMaxPower(1.0);
             follower.startTeleOpDrive(true);
             follower.update();
@@ -129,13 +122,18 @@ public class MainTeleop extends OpMode {
         secondaryMap = new SecondaryMap(gamepad2);
         magazine = new Magazine(hardwareMap.get(DcMotor.class, "magazine"), hardwareMap.get(Servo.class, "helpServo"), null,
                 null,  hardwareMap.get(WebcamName.class, "magCam"), hardwareMap.get(RevBlinkinLedDriver.class, "light"), 50);
-        shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.REVERSE, 1.0);
-        intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 0.4);
+        shooter = new BallIO(hardwareMap.get(DcMotor.class, "shooter"), DcMotorSimple.Direction.FORWARD, 1.0);
+        intake = new BallIO(hardwareMap.get(DcMotor.class, "intake"), DcMotorSimple.Direction.FORWARD, 1.0);
         shooterManager = new ShooterManager(magazine, shooter, hardwareMap.get(Servo.class, "shooterServo"), 23, 100);
         follower = Constants.createFollower(hardwareMap);
         intakeManager = new IntakeManager(magazine, intake, hardwareMap.get(Servo.class, "intakeGate"), 50);
 
         drive = new Drive(follower, new Pose());
+
+        magazine.start();
+        magazine.start();
+        shooterManager.start();
+        intakeManager.start();
 
         try (RandomAccessFile raf = new RandomAccessFile("/storage/self/primary/data.bin", "rw")) {
             raf.seek(0);
@@ -186,7 +184,7 @@ public class MainTeleop extends OpMode {
             isShooting = !isShooting;
         }
 
-        if (gamepad1.right_trigger > 0.5) {
+        if (gamepad1.right_bumper) {
             turnTowardBasket(alliance);
         }
 
@@ -195,23 +193,23 @@ public class MainTeleop extends OpMode {
         }
 
         if (gamepad1.dpad_up) {
-            turnTowardBasket(alliance);
+            //turnTowardBasket(alliance);
             shooterManager.startShooting(getBasketDistance());
         }
 
         if (gamepad1.dpad_left) {
-            goToHomeBase();
+            //goToHomeBase();
         }
 
-        if(gamepad2.dpad_up) {
-            shooterManager.setSlotOffset(0);
-        }
-        else if(gamepad2.dpad_right) {
-            shooterManager.setSlotOffset(1);
-        }
-        else if(gamepad2.dpad_down) {
-            shooterManager.setSlotOffset(2);
-        }
+      //  if(gamepad2.dpad_up) {
+      //      shooterManager.setSlotOffset(0);
+      //  }
+      //  else if(gamepad2.dpad_right) {
+      //      shooterManager.setSlotOffset(1);
+      //  }
+      //  else if(gamepad2.dpad_down) {
+      //      shooterManager.setSlotOffset(2);
+      //  }
 
         /*if(secondaryMap.startShooting())
             shooterManager.startShooting();
@@ -228,7 +226,7 @@ public class MainTeleop extends OpMode {
             magazine.setIntake();*/
 
 
-        drive.drive(primaryMap.driveX(), primaryMap.driveY(), primaryMap.rotateX());
+        drive.drive(primaryMap.driveY(), primaryMap.driveX(), primaryMap.rotateX());
     }
     @Override
     public void stop() {

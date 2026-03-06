@@ -19,5 +19,13 @@ public class RedTeleop extends MainTeleop{
                         new Pose(38.6867, 33.3040)
                 )
         ).setLinearHeadingInterpolation(follower.getHeading(), 180).build();
+
+        follower.followPath(homePath);
+        while(follower.isBusy()) {
+            follower.update();
+        }
+
+        follower.startTeleOpDrive(true);
+        follower.update();
     }
 }

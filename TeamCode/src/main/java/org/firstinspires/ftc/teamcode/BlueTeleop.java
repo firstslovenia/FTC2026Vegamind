@@ -20,5 +20,13 @@ public class BlueTeleop extends MainTeleop {
                         new Pose(105.1098, 33.3040)
                 )
         ).setLinearHeadingInterpolation(follower.getHeading(), 180).build();
+
+        follower.followPath(homePath);
+        while(follower.isBusy()) {
+            follower.update();
+        }
+
+        follower.startTeleOpDrive(true);
+        follower.update();
     }
 }

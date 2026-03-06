@@ -77,7 +77,7 @@ public class RedAutonomousBot extends LinearOpMode {
         shooterManager.start();
         magazine.start();
         magazine.start();
-        follower.setPose(new Pose(63, 9));
+        follower.setPose(new Pose(63, 9, 3.14));
         follower.update();
         intakeManager.start();
 
@@ -133,10 +133,15 @@ public class RedAutonomousBot extends LinearOpMode {
                                 new Pose(follower.getPose().getX() - 40, follower.getPose().getY())
                         )
                 )
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                new Pose(follower.getPose().getX(), follower.getPose().getY() + 40, 3.14 / 2))
+                )
                 .build();
 
         follower.followPath(pathChain);
-        while(follower.isBusy()) {
+        while(follower.isBusy() && !isStopRequested()) {
             follower.update();
         }
 

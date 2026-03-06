@@ -21,7 +21,7 @@ public class Magazine extends Process {
 
     Servo helpServo;
     ElapsedTime servoCycleTimer;
-    double servoCycleTime = 400; //adjust, just to be safe for now
+    double servoCycleTime = 600; //adjust, just to be safe for now
 
     TouchSensor intakeSensor;
     TouchSensor outtakeSensor;
@@ -80,7 +80,7 @@ public class Magazine extends Process {
 
         servoCycleTimer = new ElapsedTime();
 
-        pid = new MiniPID(0.0004, 0.00002, 0.003);
+        pid = new MiniPID(0.0013, 0.00012, 0.01);
         magState = State.IDLE;
         currIndex = 0;
         helpServo.setPosition(1.0);
