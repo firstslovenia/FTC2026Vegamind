@@ -109,13 +109,12 @@ public class BlueAutonomous extends LinearOpMode {
             AprilTagDetector detector = new AprilTagDetector(hardwareMap.get(WebcamName.class, "webcam"));
             detector.start();
 
-            while (true) {
+            while (OpModeState.isRunning) {
                 int id = detector.readObelisk();
                 if (id != -1) {
                     shooterManager.setTagID(id);
                     telemetry.addLine("Read april tag!");
                     telemetry.update();
-                    break;
                 }
             }
 
