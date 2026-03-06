@@ -53,6 +53,9 @@ public class MainTeleop extends OpMode {
     double targetHeading = 0;
 
     double basketX, basketY;
+    boolean isManual = false;
+    DcMotor magMotor;
+    Servo intakeServo, pushServo, blockServo;
 
     Alliance alliance;
     int tagID;
@@ -87,7 +90,7 @@ public class MainTeleop extends OpMode {
 
     void pickupSequence() {
         final double pickupLength = 20;
-        final double pickupSpeed = 0.2;
+        final double pickupSpeed = 0.5;
 
         PathChain pathChain = follower.pathBuilder()
                 .addPath(
@@ -127,7 +130,10 @@ public class MainTeleop extends OpMode {
         shooterManager = new ShooterManager(magazine, shooter, hardwareMap.get(Servo.class, "shooterServo"), 23, 100);
         follower = Constants.createFollower(hardwareMap);
         intakeManager = new IntakeManager(magazine, intake, hardwareMap.get(Servo.class, "intakeGate"), 50);
-
+        magMotor = hardwareMap.get(DcMotor.class, "magazine");
+        pushServo = hardwareMap.get(Servo.class, "helpServo");
+        intakeServo = hardwareMap.get(Servo.class, "intakeGate");
+        blockServo = hardwareMap.get(Servo.class, "shooterServo");
         drive = new Drive(follower, new Pose());
 
         magazine.start();
@@ -168,38 +174,71 @@ public class MainTeleop extends OpMode {
     @Override
     public void loop() {
 
-        if (gamepad2.cross) {
-            if (!isIntaking)
-                intakeManager.startIntaking();
-            else
-                intakeManager.stopIntaking();
-            isIntaking = !isIntaking;
-        }
+        if (!isManual) {
+            if (gamepad2.cross) {
+                if (!isIntaking)
+                    intakeManager.startIntaking();
+                else
+                    intakeManager.stopIntaking();
+                isIntaking = !isIntaking;
+            }
 
-        if (gamepad2.circle) {
-            if (!isShooting)
+            if (gamepad2.circle) {
+                if (!isShooting)
+                    shooterManager.startShooting(getBasketDistance());
+                else
+                    shooterManager.stopShooting();
+                isShooting = !isShooting;
+            }
+
+            if (gamepad1.right_bumper) {
+                turnTowardBasket(alliance);
+            }
+
+            if (gamepad1.dpad_down) {
+                pickupSequence();
+            }
+
+            if (gamepad1.dpad_up) {
+                //turnTowardBasket(alliance);
                 shooterManager.startShooting(getBasketDistance());
-            else
-                shooterManager.stopShooting();
-            isShooting = !isShooting;
+            }
+
+            if (gamepad1.dpad_left) {
+                //goToHomeBase();
+            }
+        } else {
+            if (gamepad1.cross) {
+                if (!isIntaking)
+                    intake.windup();
+                else
+                    intake.winddown();
+                isIntaking = !isIntaking;
+            }
+
+            if (gamepad1.circle) {
+                if (!isShooting)
+                    shooter.windup();
+                else
+                    shooter.winddown();
+                isShooting = !isShooting;
+            }
+
+            if (gamepad1.dpad_up) {
+                pushServo.setPosition(pushServo.getPosition() == 0 ? 1 : 0);
+            }
+            if (gamepad1.dpad_down) {
+                intakeServo.setPosition(intakeServo.getPosition() == 0 ? 1 : 0);
+            }
+            if (gamepad1.dpad_left) {
+                blockServo.setPosition(blockServo.getPosition() == 0 ? 1 : 0);
+            }
+
+            double magPower = (gamepad1.left_bumper ? 1 : 0) - (gamepad1.right_bumper ? 1 : 0);
+            magMotor.setPower(magPower);
         }
 
-        if (gamepad1.right_bumper) {
-            turnTowardBasket(alliance);
-        }
 
-        if (gamepad1.dpad_down) {
-            pickupSequence();
-        }
-
-        if (gamepad1.dpad_up) {
-            //turnTowardBasket(alliance);
-            shooterManager.startShooting(getBasketDistance());
-        }
-
-        if (gamepad1.dpad_left) {
-            //goToHomeBase();
-        }
 
       //  if(gamepad2.dpad_up) {
       //      shooterManager.setSlotOffset(0);
@@ -225,8 +264,27 @@ public class MainTeleop extends OpMode {
         if(secondaryMap.setupMag())
             magazine.setIntake();*/
 
+        if (gamepad1.triangle) {
+            if (isManual) {
+                intake.winddown();
+                shooter.winddown();
+            } else {
+                intakeManager.stopIntaking();
+                shooterManager.stopShooting();
+            }
+            magazine.setPidActive(!magazine.isPidActive());
+            isIntaking = false;
+            isShooting = false;
+            pushServo.setPosition(0);
+            intakeServo.setPosition(0);
+            blockServo.setPosition(0);
+            isManual = !isManual;
+        }
 
         drive.drive(primaryMap.driveY(), primaryMap.driveX(), primaryMap.rotateX());
+
+        telemetry.addData("Mode", isManual ? "Manual" : "Assisted");
+        telemetry.update();
     }
     @Override
     public void stop() {

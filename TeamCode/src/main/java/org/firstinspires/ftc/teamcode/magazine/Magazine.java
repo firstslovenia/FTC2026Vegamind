@@ -40,6 +40,9 @@ public class Magazine extends Process {
 
     double lastEncoderPos = 0;
 
+    @Getter @Setter
+    boolean pidActive = true;
+
     public enum State {
         IDLE,
         ROTATE,
@@ -71,7 +74,8 @@ public class Magazine extends Process {
 
         lastUpdate = 0;
 
-        magazineMotor.setPower(0.0);
+        if (pidActive)
+            magazineMotor.setPower(0.0);
         magazineMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         light.setPattern(RevBlinkinLedDriver.BlinkinPattern.WHITE);
@@ -83,7 +87,8 @@ public class Magazine extends Process {
         pid = new MiniPID(0.0013, 0.00012, 0.01);
         magState = State.IDLE;
         currIndex = 0;
-        helpServo.setPosition(1.0);
+        if (pidActive)
+            helpServo.setPosition(1.0);
 
         pipeline = new MagazineCamPipeline(webcamName, 640, 480);
 
@@ -101,15 +106,18 @@ public class Magazine extends Process {
 
     boolean goToPosEncoder(int p) {
         if (approxEq(magazineMotor.getCurrentPosition(), p, 2)) {
-            magazineMotor.setPower(0.0f);
+            if (pidActive)
+                magazineMotor.setPower(0.0f);
             return true;
         }
 
-        magazineMotor.setTargetPosition(p);// good enough?
+        if (pidActive)
+            magazineMotor.setTargetPosition(p);// good enough?
         if(magazineMotor.getMode() != DcMotor.RunMode.RUN_TO_POSITION)
             magazineMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        magazineMotor.setPower(1.0f);
+        if (pidActive)
+            magazineMotor.setPower(1.0f);
 
         return false;
     }
@@ -155,12 +163,14 @@ public class Magazine extends Process {
         double pos = -magazineMotor.getCurrentPosition();
         if(magState != State.IDLE) {
             double p = pid.getOutput(pos, motorPositions[currIndex]);
-            magazineMotor.setPower(p);
+            if (pidActive)
+                magazineMotor.setPower(p);
         }
 
         switch(magState) {
             case IDLE:
-                magazineMotor.setPower(0.0);
+                if (pidActive)
+                    magazineMotor.setPower(0.0);
             case ROTATE:
                 if(approxEq(pos, motorPositions[currIndex], 30) && approxEq(lastEncoderPos, pos, 15)) {
                     //magState = State.DEPOSIT;
@@ -173,14 +183,17 @@ public class Magazine extends Process {
                     magState = State.IDLE;
                     break;
                 }
-                magazineMotor.setPower(0.0f);
-                helpServo.setPosition(0.0);
+                if (pidActive) {
+                    magazineMotor.setPower(0.0f);
+                    helpServo.setPosition(0.0);
+                }
                 try {
                     Thread.sleep((long)servoCycleTime); // abs waiting time where NOTHING SHOULD HAPPEN
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                helpServo.setPosition(1.0);
+                if (pidActive)
+                    helpServo.setPosition(1.0);
                 try {
                     Thread.sleep((long)servoCycleTime); // abs waiting time where NOTHING SHOULD HAPPEN
                 } catch (InterruptedException e) {
