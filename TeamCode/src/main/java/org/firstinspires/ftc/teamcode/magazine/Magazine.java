@@ -159,10 +159,8 @@ public class Magazine extends Process {
 
         double pos = -magazineMotor.getCurrentPosition();
         if(magState != State.IDLE) {
-            if (pidActive) {
-                double p = pid.getOutput(pos, motorPositions[currIndex]);
-                magazineMotor.setPower(p);
-            }
+            double p = pid.getOutput(pos, motorPositions[currIndex]);
+            magazineMotor.setPower(p);
         }
 
         switch(magState) {
