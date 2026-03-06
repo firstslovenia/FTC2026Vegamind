@@ -121,15 +121,14 @@ public class BlueAutonomousBot extends LinearOpMode {
         }).start();
 
         waitForStart();
-
         PathChain pathChain = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                new Pose(follower.getPose().getX(), follower.getPose().getY() + 40)
+                                new Pose(follower.getPose().getX() - 40, follower.getPose().getY())
                         )
                 )
-                .setLinearHeadingInterpolation(follower.getHeading(), 3.14/2)
+                .setLinearHeadingInterpolation(follower.getHeading(), follower.getHeading())
                 .build();
 
         follower.followPath(pathChain);
@@ -137,6 +136,19 @@ public class BlueAutonomousBot extends LinearOpMode {
             follower.update();
         }
 
+        PathChain pathChain1 = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                new Pose(follower.getPose().getX(), follower.getPose().getY() + 40))
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), 3.14 / 2)
+                .build();
+
+        follower.followPath(pathChain1);
+        while(follower.isBusy() && !isStopRequested()) {
+            follower.update();
+        }
         OpModeState.isRunning = false;
     }
 }

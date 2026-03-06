@@ -31,6 +31,7 @@ public class MagazineCamPipeline extends OpenCvPipeline {
     int streamWidth, streamHeight;
 
     BallColor currentColor;
+    boolean requestColor;
 
 
     public MagazineCamPipeline(WebcamName webcam, int streamWidth, int streamHeight) {
@@ -70,6 +71,8 @@ public class MagazineCamPipeline extends OpenCvPipeline {
     }
 
     public synchronized BallColor getCurrentColor() {
+        requestColor = true;
+        while(requestColor);
         return currentColor;
     }
 
@@ -87,11 +90,36 @@ public class MagazineCamPipeline extends OpenCvPipeline {
         Scalar upperP = new Scalar(150, 255, 255);
 
 
-        synchronized(this) {
-            if(inColorRange(px, lowerG, upperG)) currentColor = BallColor.GREEN;
-            else if(inColorRange(px, lowerP, upperP)) currentColor = BallColor.PURPLE;
-            else currentColor = BallColor.NONE;
-        }
+                if(inColorRange(px, lowerG, upperG)) {
+                        currentColor = BallColor.GREEN;
+                        Core.inRange(hsvFrame, lowerG, upperG, filteredFrame);
+                    }
+                else if(inColorRange(px, lowerP, upperP)) {
+                        currentColor = BallColor.PURPLE;
+                        Core.inRange(hsvFrame, lowerP, upperP, filteredFrame);
+                    }
+                else {
+                        currentColor = BallColor.NONE;
+                        requestColor = false;
+                        return input;
+                    }
+
+                        List<MatOfPoint> contours = new ArrayList<>();
+                Imgproc.findContours(filteredFrame, contours, hierarchy,
+                                Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+                    Imgproc.drawContours(input, contours, -1, new Scalar(255, 0, 0));
+                    for(MatOfPoint cont : contours) {
+                            if(Imgproc.contourArea(cont) > ((double) (640 * 480) / 2)) {
+                                    requestColor = false;
+                                    return input;
+                                }
+            }
+
+
+                    currentColor = BallColor.NONE;
+                   requestColor = false;
+
 
         return input;
     }

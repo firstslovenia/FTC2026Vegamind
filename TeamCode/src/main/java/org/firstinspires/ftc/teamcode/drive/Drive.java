@@ -19,8 +19,13 @@ public class Drive {
     }
 
     public void drive(double driveX, double driveY, double driveRot) {
-        follower.setTeleOpDrive(driveX, driveY, driveRot);
+        follower.setTeleOpDrive(driveX, driveY, driveRot, false);
 
+        follower.update();
+    }
+
+    public void reset() {
+        follower.setPose( new Pose());
         follower.update();
     }
 

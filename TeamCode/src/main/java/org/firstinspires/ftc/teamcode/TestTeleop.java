@@ -87,7 +87,11 @@ public class TestTeleop extends OpMode {
 
         telemetry.addData("s1", magazine.getBallAtSlot(0));
         telemetry.addData("s2", magazine.getBallAtSlot(1));
-        telemetry.addData("s3", magazine.getBallAtSlot(2));
+        telemetry.addData("s2", magazine.getBallAtSlot(2));
+        telemetry.addData("intake state", intakeManager.getState());
+        telemetry.addData("mag state", magazine.getState());
+        telemetry.addData("target", magazine.getCurrIndex());
+        telemetry.update();
 
         //telemetry.update();
     }

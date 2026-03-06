@@ -130,17 +130,27 @@ public class RedAutonomousBot extends LinearOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                new Pose(follower.getPose().getX() - 40, follower.getPose().getY())
+                                new Pose(follower.getPose().getX() + 40, follower.getPose().getY())
                         )
                 )
-                .addPath(
-                        new BezierLine(
-                                follower.getPose(),
-                                new Pose(follower.getPose().getX(), follower.getPose().getY() + 40, 3.14 / 2))
-                )
+                .setLinearHeadingInterpolation(follower.getHeading(), follower.getHeading())
                 .build();
 
         follower.followPath(pathChain);
+        while(follower.isBusy() && !isStopRequested()) {
+            follower.update();
+        }
+
+        PathChain pathChain1 = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                new Pose(follower.getPose().getX(), follower.getPose().getY() + 40))
+                )
+                .setLinearHeadingInterpolation(follower.getHeading(), 3.14 / 2)
+                .build();
+
+        follower.followPath(pathChain1);
         while(follower.isBusy() && !isStopRequested()) {
             follower.update();
         }

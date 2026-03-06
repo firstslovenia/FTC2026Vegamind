@@ -7,6 +7,8 @@ import org.firstinspires.ftc.teamcode.magazine.Magazine;
 import org.firstinspires.ftc.teamcode.process.Process;
 import org.firstinspires.ftc.teamcode.shooter.BallIO;
 
+import lombok.Getter;
+
 public class IntakeManager extends Process {
 
     enum State {
@@ -19,6 +21,7 @@ public class IntakeManager extends Process {
 
     Magazine magazine;
     BallIO intake;
+    @Getter
     Servo intakeGate;
 
     int intakesLeft = 0;
@@ -110,8 +113,9 @@ public class IntakeManager extends Process {
 
         currSlot = ++currSlot % 3;
         intakesLeft--;
-        if(intakesLeft > 0) currState = State.BALL_SELECT;
-        else if(!manualStop) currState = State.WINDDOWN;
+        //if(intakesLeft > 0) currState = State.BALL_SELECT;
+        //else if(!manualStop) currState = State.WINDDOWN;
+        currState = State.WINDDOWN;
     }
 
     void windDownState() {
